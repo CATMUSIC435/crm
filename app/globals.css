@@ -126,5 +126,6 @@
   }
   html {
     @apply font-sans;
+    font-size: 14px; /* Giảm từ 16px xuống 14px để thu nhỏ toàn bộ UI */
   }
 }
