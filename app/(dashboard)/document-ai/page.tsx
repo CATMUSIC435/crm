@@ -8,12 +8,16 @@ import {
   ScanLine, UploadCloud, Sparkles, CheckCircle2, 
   RefreshCcw, Save, FileText, ChevronRight
 } from 'lucide-react'
+import { useStore } from '@/store/useStore'
+import { Customer, Contract } from '@/types'
 
 // Mock Image URL for CCCD (Can be any placeholder or realistic mock)
 // We use a generic vector/illustration of an ID card
 const ID_CARD_IMAGE = "https://t3.ftcdn.net/jpg/04/23/34/83/360_F_423348301_lH2o0iO0w4qP4C7z724vU8qgVpG7VbY4.jpg"
 
 export default function DocumentAIPage() {
+  const { addCustomer, addContract, customers } = useStore()
+  
   const [scanStatus, setScanStatus] = useState<'idle' | 'scanning' | 'completed'>('idle')
   const [formData, setFormData] = useState({
      fullName: '',
@@ -26,17 +30,25 @@ export default function DocumentAIPage() {
   
   // Progress animation state
   const [progress, setProgress] = useState(0)
+  
+  // Feedback states
+  const [isSaved, setIsSaved] = useState(false)
+  const [isContractCreated, setIsContractCreated] = useState(false)
 
   const handleUploadClick = () => {
      setScanStatus('scanning')
      setFormData({ fullName: '', idNumber: '', dob: '', gender: '', address: '', issueDate: '' })
      setProgress(0)
+     setIsSaved(false)
+     setIsContractCreated(false)
   }
 
   const handleReset = () => {
      setScanStatus('idle')
      setFormData({ fullName: '', idNumber: '', dob: '', gender: '', address: '', issueDate: '' })
      setProgress(0)
+     setIsSaved(false)
+     setIsContractCreated(false)
   }
 
   useEffect(() => {
@@ -63,6 +75,39 @@ export default function DocumentAIPage() {
         return () => clearInterval(interval)
      }
   }, [scanStatus])
+
+  const handleSaveCustomer = () => {
+     addCustomer({
+        name: formData.fullName,
+        phone: '09' + Math.floor(Math.random() * 100000000),
+        email: 'khachhang_ai@email.com',
+        rank: 'Tiềm Năng' as any,
+        revenue: 0,
+        assignedTo: 'Bạn',
+        status: 'Khách mới' as any
+     })
+     setIsSaved(true)
+  }
+
+  const handleCreateContract = () => {
+     // If not saved yet, save customer first
+     if (!isSaved) {
+       handleSaveCustomer()
+     }
+     
+     // Generate a fake contract
+     addContract({
+        customerId: `c${customers.length + 1}`, // Assuming this is the newly created customer's ID
+        inventoryId: 'i2b', // A dummy empty inventory ID
+        projectId: 'p1',
+        value: 12500000000,
+        status: 'Chờ duyệt',
+        type: 'Hợp đồng đặt cọc',
+        paymentProgress: 0,
+        signer: formData.fullName
+     })
+     setIsContractCreated(true)
+  }
 
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto w-full">
@@ -266,11 +311,23 @@ export default function DocumentAIPage() {
             
             <div className="p-4 border-t bg-slate-50 flex flex-col md:flex-row justify-end gap-3 shrink-0">
                <Button variant="outline" onClick={handleReset} disabled={scanStatus === 'scanning'}>Làm Lại</Button>
-               <Button className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg" disabled={scanStatus !== 'completed'}>
-                  <Save className="h-4 w-4 mr-2" /> Lưu Hồ Sơ Khách Hàng
+               
+               <Button 
+                 className={`${isSaved ? 'bg-green-600 hover:bg-green-700' : 'bg-indigo-600 hover:bg-indigo-700'} text-white shadow-lg`} 
+                 disabled={scanStatus !== 'completed' || isSaved}
+                 onClick={handleSaveCustomer}
+               >
+                  {isSaved ? <CheckCircle2 className="h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                  {isSaved ? 'Đã Lưu Khách Hàng' : 'Lưu Hồ Sơ Khách Hàng'}
                </Button>
-               <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg" disabled={scanStatus !== 'completed'}>
-                  Tạo Hợp Đồng Tự Động <ChevronRight className="h-4 w-4 ml-2" />
+               
+               <Button 
+                 className={`${isContractCreated ? 'bg-green-600 hover:bg-green-700' : 'bg-emerald-600 hover:bg-emerald-700'} text-white shadow-lg`} 
+                 disabled={scanStatus !== 'completed' || isContractCreated}
+                 onClick={handleCreateContract}
+               >
+                  {isContractCreated ? 'Đã Tạo Hợp Đồng' : 'Tạo Hợp Đồng Tự Động'} 
+                  {!isContractCreated && <ChevronRight className="h-4 w-4 ml-2" />}
                </Button>
             </div>
          </Card>

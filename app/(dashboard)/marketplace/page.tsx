@@ -1,5 +1,6 @@
 "use client"
 import React, { useState } from 'react'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -9,7 +10,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { 
   Store, Handshake, Share2, Upload, Star, 
   MapPin, Building, Plus, Search, Filter,
-  Phone, Mail, CheckCircle2, DollarSign
+  Phone, Mail, CheckCircle2, DollarSign,
+  TrendingUp, Users, Activity, PieChart
 } from 'lucide-react'
 
 // MOCK DATA
@@ -18,6 +20,14 @@ const LISTINGS = [
   { id: 2, title: 'Biệt thự Đơn Lập The Global City', price: '72 Tỷ', comm_split: '40/60', my_comm: '1.2%', type: 'Bán', location: 'Q2, TP.HCM', owner: 'Thanh Hằng', avatar: 'TH', image: 'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=400&q=80' },
   { id: 3, title: 'Shophouse Sala Đại Quang Minh', price: '120 Triệu/Tháng', comm_split: '50/50', my_comm: '0.5 Tháng', type: 'Cho Thuê', location: 'Q2, TP.HCM', owner: 'Văn Đạt', avatar: 'VD', image: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=400&q=80' },
   { id: 4, title: 'Căn hộ 3PN Vinhomes Grand Park', price: '5.2 Tỷ', comm_split: 'Chỉ nhận khách', my_comm: '1.0%', type: 'Bán', location: 'Q9, TP.HCM', owner: 'Minh Khang', avatar: 'MK', image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=400&q=80' },
+  { id: 5, title: 'Nhà Phố Soho - The Global City', price: '42 Tỷ', comm_split: '30/70', my_comm: '1.0%', type: 'Bán', location: 'Q2, TP.HCM', owner: 'Bích Ngọc', avatar: 'BN', image: 'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&w=400&q=80' },
+  { id: 6, title: 'Biệt Thự Đảo Ecopark', price: '85 Tỷ', comm_split: '50/50', my_comm: '1.2%', type: 'Bán', location: 'Văn Giang, Hưng Yên', owner: 'Tiến Đạt', avatar: 'TD', image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=400&q=80' },
+  { id: 7, title: 'Căn hộ Duplex Masteri Thảo Điền', price: '18 Tỷ', comm_split: '50/50', my_comm: '1.5%', type: 'Bán', location: 'Q2, TP.HCM', owner: 'Hải Yến', avatar: 'HY', image: 'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=400&q=80' },
+  { id: 8, title: 'Toà Nhà VP - Nam Kỳ Khởi Nghĩa', price: '500 Tr/Tháng', comm_split: '50/50', my_comm: '0.5 Tháng', type: 'Cho Thuê', location: 'Q3, TP.HCM', owner: 'Hoàng Vũ', avatar: 'HV', image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=400&q=80' },
+  { id: 9, title: 'Sky Villa Landmark 81', price: '120 Tỷ', comm_split: '60/40', my_comm: '2.0%', type: 'Bán', location: 'Bình Thạnh, TP.HCM', owner: 'Quốc Bảo', avatar: 'QB', image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=400&q=80' },
+  { id: 10, title: 'Mặt Bằng KD Nguyễn Trãi', price: '250 Tr/Tháng', comm_split: '50/50', my_comm: '0.5 Tháng', type: 'Cho Thuê', location: 'Q1, TP.HCM', owner: 'Tuấn Minh', avatar: 'TM', image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=400&q=80' },
+  { id: 11, title: 'Villa Biển NovaWorld Hồ Tràm', price: '35 Tỷ', comm_split: '50/50', my_comm: '1.5%', type: 'Bán', location: 'Xuyên Mộc, BR-VT', owner: 'Ngọc Lan', avatar: 'NL', image: 'https://images.unsplash.com/photo-1613490908571-9ce224a1dc1b?auto=format&fit=crop&w=400&q=80' },
+  { id: 12, title: 'Nhà Xưởng KCN Sóng Thần', price: '800 Tr/Tháng', comm_split: 'Chỉ nhận khách', my_comm: '0.5 Tháng', type: 'Cho Thuê', location: 'Dĩ An, Bình Dương', owner: 'Đức Huy', avatar: 'ĐH', image: 'https://images.unsplash.com/photo-1565514020179-026b92b84bb6?auto=format&fit=crop&w=400&q=80' },
 ]
 
 const AGENCIES = [
@@ -25,6 +35,24 @@ const AGENCIES = [
   { id: 2, name: 'Đại Lý Rever Đông Sài Gòn', tier: 'F2 Partner', rating: 4.8, deals: 85, logo: 'RV' },
   { id: 3, name: 'SmartLand', tier: 'F1 Partner', rating: 4.7, deals: 210, logo: 'SL' },
   { id: 4, name: 'Cộng đồng Môi Giới Tự Do (Freelancers)', tier: 'Cộng Tác Viên', rating: 4.2, deals: 45, logo: 'FL' },
+  { id: 5, name: 'Propzy Việt Nam', tier: 'F1 Partner', rating: 4.6, deals: 320, logo: 'PZ' },
+  { id: 6, name: 'IQI Việt Nam', tier: 'Global Partner', rating: 4.9, deals: 410, logo: 'IQ' },
+  { id: 7, name: 'Đại Lý Cenland', tier: 'F1 Partner', rating: 4.5, deals: 180, logo: 'CL' },
+  { id: 8, name: 'Hội Môi Giới Khu Đông', tier: 'Cộng Tác Viên', rating: 4.3, deals: 65, logo: 'KĐ' },
+  { id: 9, name: 'ERA Vietnam', tier: 'Global Partner', rating: 4.8, deals: 350, logo: 'ER' },
+  { id: 10, name: 'Phú Hoàng Land', tier: 'F2 Partner', rating: 4.4, deals: 110, logo: 'PH' },
+  { id: 11, name: 'DatXanh Miền Nam', tier: 'F1 Partner', rating: 4.7, deals: 450, logo: 'DX' },
+  { id: 12, name: 'Savills Vietnam', tier: 'Global Partner', rating: 5.0, deals: 500, logo: 'SV' },
+]
+
+const MARKET_STATS = [
+  { month: 'T1', listings: 120, deals: 45, volume: 85 },
+  { month: 'T2', listings: 150, deals: 55, volume: 110 },
+  { month: 'T3', listings: 200, deals: 80, volume: 160 },
+  { month: 'T4', listings: 280, deals: 110, volume: 215 },
+  { month: 'T5', listings: 350, deals: 140, volume: 290 },
+  { month: 'T6', listings: 420, deals: 180, volume: 380 },
+  { month: 'T7', listings: 500, deals: 220, volume: 450 },
 ]
 
 export default function MarketplacePage() {
@@ -50,11 +78,86 @@ export default function MarketplacePage() {
         </div>
       </div>
 
-      <Tabs defaultValue="listings" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 md:grid-cols-2 lg:w-[400px] h-auto md:h-10 mb-6 gap-2 md:gap-0">
+      <Tabs defaultValue="analytics" className="w-full">
+        <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 lg:w-[600px] h-auto md:h-10 mb-6 gap-2 md:gap-0">
+          <TabsTrigger value="analytics" className="flex items-center gap-2"><PieChart className="h-4 w-4"/> Phân Tích & Thống Kê</TabsTrigger>
           <TabsTrigger value="listings" className="flex items-center gap-2"><Building className="h-4 w-4"/> Rổ Hàng Hợp Tác</TabsTrigger>
           <TabsTrigger value="agencies" className="flex items-center gap-2"><Handshake className="h-4 w-4"/> Mạng Lưới Đại Lý</TabsTrigger>
         </TabsList>
+
+        {/* 0. TAB: PHÂN TÍCH & THỐNG KÊ */}
+        <TabsContent value="analytics" className="space-y-6">
+           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card className="shadow-sm border-slate-200">
+                 <CardContent className="p-6">
+                    <div className="flex items-center gap-2 text-slate-500 mb-2 font-medium">
+                       <Store className="h-4 w-4 text-orange-500" /> Tổng Sản Phẩm
+                    </div>
+                    <div className="text-3xl font-black text-slate-800">1,245</div>
+                    <div className="text-xs font-bold text-green-500 mt-2 flex items-center gap-1"><TrendingUp className="h-3 w-3"/> +15% so với tháng trước</div>
+                 </CardContent>
+              </Card>
+              <Card className="shadow-sm border-slate-200">
+                 <CardContent className="p-6">
+                    <div className="flex items-center gap-2 text-slate-500 mb-2 font-medium">
+                       <Activity className="h-4 w-4 text-blue-500" /> Giao Dịch Chéo
+                    </div>
+                    <div className="text-3xl font-black text-slate-800">420</div>
+                    <div className="text-xs font-bold text-green-500 mt-2 flex items-center gap-1"><TrendingUp className="h-3 w-3"/> +8% so với tháng trước</div>
+                 </CardContent>
+              </Card>
+              <Card className="shadow-sm border-slate-200">
+                 <CardContent className="p-6">
+                    <div className="flex items-center gap-2 text-slate-500 mb-2 font-medium">
+                       <Users className="h-4 w-4 text-purple-500" /> Môi Giới Tham Gia
+                    </div>
+                    <div className="text-3xl font-black text-slate-800">3,850</div>
+                    <div className="text-xs font-bold text-green-500 mt-2 flex items-center gap-1"><TrendingUp className="h-3 w-3"/> +210 thành viên mới</div>
+                 </CardContent>
+              </Card>
+              <Card className="shadow-sm border-slate-200">
+                 <CardContent className="p-6">
+                    <div className="flex items-center gap-2 text-slate-500 mb-2 font-medium">
+                       <DollarSign className="h-4 w-4 text-green-500" /> Tổng GMV (Tỷ VNĐ)
+                    </div>
+                    <div className="text-3xl font-black text-slate-800">4,520</div>
+                    <div className="text-xs font-bold text-green-500 mt-2 flex items-center gap-1"><TrendingUp className="h-3 w-3"/> +22% so với tháng trước</div>
+                 </CardContent>
+              </Card>
+           </div>
+           
+           <Card className="shadow-sm border-slate-200">
+              <CardHeader className="pb-2 border-b">
+                 <CardTitle className="text-lg">Tăng Trưởng Chợ Liên Kết (YTD)</CardTitle>
+                 <CardDescription>Số lượng sản phẩm đăng bán và GMV giao dịch thành công (đơn vị: Tỷ VNĐ).</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-6">
+                 <div className="h-[350px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                       <AreaChart data={MARKET_STATS} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                          <defs>
+                             <linearGradient id="colorListings" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#f97316" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="#f97316" stopOpacity={0}/>
+                             </linearGradient>
+                             <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                             </linearGradient>
+                          </defs>
+                          <XAxis dataKey="month" tick={{fontSize: 12, fill: '#64748b'}} axisLine={false} tickLine={false} />
+                          <YAxis yAxisId="left" tick={{fontSize: 12, fill: '#64748b'}} axisLine={false} tickLine={false} />
+                          <YAxis yAxisId="right" orientation="right" tick={{fontSize: 12, fill: '#64748b'}} axisLine={false} tickLine={false} />
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                          <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                          <Area yAxisId="left" type="monotone" dataKey="listings" stroke="#f97316" strokeWidth={2} fillOpacity={1} fill="url(#colorListings)" name="Sản Phẩm Mới" />
+                          <Area yAxisId="right" type="monotone" dataKey="volume" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorVolume)" name="GMV (Tỷ VNĐ)" />
+                       </AreaChart>
+                    </ResponsiveContainer>
+                 </div>
+              </CardContent>
+           </Card>
+        </TabsContent>
 
         {/* 1. TAB: RỔ HÀNG HỢP TÁC */}
         <TabsContent value="listings" className="space-y-6">

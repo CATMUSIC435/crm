@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { 
   Trophy, Medal, Target, Zap, Star, Crown, 
-  Swords, Flame, ArrowUpCircle, Award, Crosshair
+  Swords, Flame, ArrowUpCircle, ArrowDownCircle, Award, Crosshair, Users, Mail
 } from 'lucide-react'
 
 // MOCK DATA
@@ -17,12 +17,19 @@ const LEADERBOARD = [
   { rank: 3, name: 'Phạm Thị Mai', score: 75100, avatar: 'PM', deal: '18.5 Tỷ', trend: 'down' },
   { rank: 4, name: 'Trần Văn Đạt', score: 64200, avatar: 'TD', deal: '15.2 Tỷ', trend: 'up' },
   { rank: 5, name: 'Hoàng Ngọc Ánh', score: 61000, avatar: 'HA', deal: '12.8 Tỷ', trend: 'down' },
+  { rank: 6, name: 'Đỗ Văn Cường', score: 58000, avatar: 'DC', deal: '10.5 Tỷ', trend: 'up' },
+  { rank: 7, name: 'Vũ Thanh Hằng', score: 54300, avatar: 'VH', deal: '9.2 Tỷ', trend: 'down' },
+  { rank: 8, name: 'Phan Minh Khôi', score: 51200, avatar: 'PK', deal: '8.0 Tỷ', trend: 'up' },
+  { rank: 9, name: 'Lý Tiểu Long', score: 48900, avatar: 'LL', deal: '7.5 Tỷ', trend: 'down' },
+  { rank: 10, name: 'Đinh Tuấn Tài', score: 45000, avatar: 'DT', deal: '5.4 Tỷ', trend: 'up' },
 ]
 
 const QUESTS = [
   { id: 1, title: 'Sát Thủ Cuộc Gọi', desc: 'Thực hiện 50 cuộc gọi Outbound', current: 45, max: 50, exp: '+500 EXP', icon: <Crosshair className="h-5 w-5 text-red-500" /> },
   { id: 2, title: 'Người Dẫn Đường', desc: 'Dẫn 5 khách hàng đi xem sa bàn', current: 2, max: 5, exp: '+1000 EXP', icon: <Target className="h-5 w-5 text-blue-500" /> },
   { id: 3, title: 'Cá Mập Cắn Câu', desc: 'Chốt thành công 1 Hợp đồng', current: 0, max: 1, exp: '+5000 EXP', icon: <Swords className="h-5 w-5 text-amber-500" /> },
+  { id: 4, title: 'Kết Nối Diện Rộng', desc: 'Gặp gỡ 10 khách hàng mới', current: 8, max: 10, exp: '+1500 EXP', icon: <Users className="h-5 w-5 text-indigo-500" /> },
+  { id: 5, title: 'Chiến Dịch Email', desc: 'Gửi 500 Email Marketing', current: 500, max: 500, exp: '+800 EXP', icon: <Mail className="h-5 w-5 text-pink-500" /> },
 ]
 
 const BADGES = [
@@ -31,6 +38,8 @@ const BADGES = [
   { id: 3, name: 'Whale Hunter', desc: 'Bán biệt thự > 50 Tỷ', icon: <Crown className="h-6 w-6 text-white" />, color: 'bg-amber-500', unlocked: false },
   { id: 4, name: 'Marathon', desc: 'Gọi 1000 cuộc gọi', icon: <Zap className="h-6 w-6 text-white" />, color: 'bg-emerald-500', unlocked: true },
   { id: 5, name: 'MVP Tháng', desc: 'Top 1 doanh số tháng', icon: <Trophy className="h-6 w-6 text-white" />, color: 'bg-yellow-400', unlocked: false },
+  { id: 6, name: 'Social Star', desc: '50 khách từ Facebook', icon: <Star className="h-6 w-6 text-white" />, color: 'bg-blue-500', unlocked: true },
+  { id: 7, name: 'Elite Club', desc: 'Đạt cấp độ 30', icon: <Award className="h-6 w-6 text-white" />, color: 'bg-purple-500', unlocked: false },
 ]
 
 export default function GamificationPage() {
@@ -226,8 +235,9 @@ export default function GamificationPage() {
                               {/* Deal Info */}
                               <div className="text-right shrink-0">
                                  <div className={`font-black text-lg ${isTop1 ? 'text-amber-600' : 'text-slate-700'}`}>{user.deal}</div>
-                                 <div className="text-[10px] font-bold text-green-500 flex items-center justify-end gap-0.5">
-                                    <ArrowUpCircle className="h-3 w-3" /> Tăng hạng
+                                 <div className={`text-[10px] font-bold flex items-center justify-end gap-0.5 ${user.trend === 'up' ? 'text-green-500' : 'text-red-500'}`}>
+                                    {user.trend === 'up' ? <ArrowUpCircle className="h-3 w-3" /> : <ArrowDownCircle className="h-3 w-3" />} 
+                                    {user.trend === 'up' ? 'Tăng hạng' : 'Tụt hạng'}
                                  </div>
                               </div>
 

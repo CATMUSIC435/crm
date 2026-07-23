@@ -1,5 +1,6 @@
 "use client"
 import React, { useState } from 'react'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -17,6 +18,17 @@ const REFERRED_CUSTOMERS = [
   { id: 1, name: 'Lê Viết Dũng', phone: '0901***123', date: '19/07/2026', status: 'Đã giải ngân', project: 'Aqua City', commission: '75,000,000', payStatus: 'Đã thanh toán' },
   { id: 2, name: 'Nguyễn Thị Hoa', phone: '0988***456', date: '15/07/2026', status: 'Đã đặt cọc', project: 'Aqua City', commission: '75,000,000', payStatus: 'Chờ giải ngân' },
   { id: 3, name: 'Trần Văn Mạnh', phone: '0933***789', date: '12/07/2026', status: 'Đang tư vấn', project: 'Vinhomes Grand Park', commission: '50,000,000', payStatus: 'Chưa phát sinh' },
+  { id: 4, name: 'Phạm Minh Tuấn', phone: '0912***345', date: '10/07/2026', status: 'Đã giải ngân', project: 'NovaWorld Phan Thiet', commission: '120,000,000', payStatus: 'Đã thanh toán' },
+  { id: 5, name: 'Hoàng Tú Anh', phone: '0945***678', date: '08/07/2026', status: 'Đang tư vấn', project: 'Aqua City', commission: '75,000,000', payStatus: 'Chưa phát sinh' },
+  { id: 6, name: 'Đặng Thùy Trâm', phone: '0977***890', date: '05/07/2026', status: 'Đã giải ngân', project: 'Vinhomes Grand Park', commission: '50,000,000', payStatus: 'Đã thanh toán' },
+  { id: 7, name: 'Vũ Đức Hải', phone: '0966***222', date: '01/07/2026', status: 'Đã đặt cọc', project: 'NovaWorld Ho Tram', commission: '90,000,000', payStatus: 'Chờ giải ngân' },
+]
+
+const PERFORMANCE_DATA = [
+  { name: 'Tuần 1', click: 400, deal: 0 },
+  { name: 'Tuần 2', click: 800, deal: 1 },
+  { name: 'Tuần 3', click: 600, deal: 1 },
+  { name: 'Tuần 4', click: 650, deal: 3 },
 ]
 
 export default function ReferralPage() {
@@ -87,8 +99,8 @@ export default function ReferralPage() {
                     <Users className="h-4 w-4 text-blue-500" />
                     <span className="text-xs font-bold uppercase tracking-wider">Tổng Click</span>
                   </div>
-                  <div className="text-2xl font-bold">1,204</div>
-                  <div className="text-xs text-green-500 font-medium mt-1">+12 hôm nay</div>
+                  <div className="text-2xl font-bold">2,450</div>
+                  <div className="text-xs text-green-500 font-medium mt-1">+35 hôm nay</div>
                 </CardContent>
               </Card>
               <Card className="shadow-sm">
@@ -97,8 +109,8 @@ export default function ReferralPage() {
                     <CheckCircle className="h-4 w-4 text-green-500" />
                     <span className="text-xs font-bold uppercase tracking-wider">Đã Chốt</span>
                   </div>
-                  <div className="text-2xl font-bold text-green-600">2 <span className="text-sm font-normal text-slate-500">Giao dịch</span></div>
-                  <div className="text-xs text-muted-foreground font-medium mt-1">Tỷ lệ chuyển đổi: 0.16%</div>
+                  <div className="text-2xl font-bold text-green-600">5 <span className="text-sm font-normal text-slate-500">Giao dịch</span></div>
+                  <div className="text-xs text-muted-foreground font-medium mt-1">Tỷ lệ chuyển đổi: 0.20%</div>
                 </CardContent>
               </Card>
            </div>
@@ -110,10 +122,10 @@ export default function ReferralPage() {
                   <span className="text-sm font-bold uppercase tracking-wider">Tổng Hoa Hồng (Tạm tính)</span>
                 </div>
                 <div className="text-4xl font-bold tracking-tight mb-1">
-                  150.000.000 <span className="text-xl font-medium text-fuchsia-200">VNĐ</span>
+                  410.000.000 <span className="text-xl font-medium text-fuchsia-200">VNĐ</span>
                 </div>
                 <div className="text-sm text-fuchsia-100 mb-4">
-                  Thực nhận đợt 1: <strong className="text-white">75.000.000 VNĐ</strong>
+                  Thực nhận đợt 1: <strong className="text-white">245.000.000 VNĐ</strong>
                 </div>
                 <Button className="w-full bg-white text-fuchsia-700 hover:bg-slate-100 font-bold">
                   Yêu Cầu Rút Tiền (Withdraw)
@@ -133,13 +145,13 @@ export default function ReferralPage() {
                   <h3 className="font-bold text-amber-900 text-lg flex items-center gap-2">
                     <Trophy className="h-5 w-5 text-amber-500" /> Đường Đua Doanh Số (Tháng 7)
                   </h3>
-                  <Badge className="bg-amber-100 text-amber-700 border-amber-200">2/5 Khách hàng</Badge>
+                  <Badge className="bg-amber-100 text-amber-700 border-amber-200">3/5 Khách hàng</Badge>
                 </div>
                 
                 <div className="relative pt-8 pb-4 px-4">
                   {/* Progress Line */}
                   <div className="absolute top-[42px] left-8 right-8 h-2 bg-amber-200 rounded-full"></div>
-                  <div className="absolute top-[42px] left-8 h-2 bg-amber-500 rounded-full transition-all duration-1000" style={{ width: '40%' }}></div>
+                  <div className="absolute top-[42px] left-8 h-2 bg-amber-500 rounded-full transition-all duration-1000" style={{ width: '50%' }}></div>
                   
                   {/* Milestones */}
                   <div className="relative flex justify-between">
@@ -155,7 +167,7 @@ export default function ReferralPage() {
                         </div>
                      </div>
 
-                     {/* Milestone 2 (Current) */}
+                     {/* Milestone 2 (Achieved) */}
                      <div className="flex flex-col items-center gap-2 relative">
                         <div className="h-10 w-10 rounded-full bg-amber-500 text-white flex items-center justify-center z-10 shadow-md ring-4 ring-amber-50">
                           <Smartphone className="h-5 w-5" />
@@ -180,7 +192,7 @@ export default function ReferralPage() {
                   </div>
                 </div>
                 <div className="text-center mt-2">
-                  <p className="text-sm font-medium text-amber-800">Chỉ cần giới thiệu 1 khách hàng nữa để nhận <strong className="text-amber-600">iPhone 15 Pro Max</strong>! Cố lên!</p>
+                  <p className="text-sm font-medium text-amber-800">Chúc mừng bạn đã đạt mốc <strong className="text-amber-600">iPhone 15 Pro</strong>! Chỉ còn 2 khách để đi <strong className="text-amber-600">Maldives</strong>!</p>
                 </div>
              </CardContent>
            </Card>

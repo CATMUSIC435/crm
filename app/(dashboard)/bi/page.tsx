@@ -1,51 +1,17 @@
 "use client"
-import React, { useState } from 'react'
+import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { 
   BarChart4, BrainCircuit, TrendingUp, TrendingDown, 
-  Target, Filter, Download, Zap, PieChart, Activity,
-  AlertTriangle
+  Filter, Download, Zap, AlertTriangle
 } from 'lucide-react'
 import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   BarChart, Bar, Cell
 } from 'recharts'
 import { useStore } from '@/store/useStore'
-
-// Mock Data cho Forecast
-const FORECAST_DATA = [
-  { month: 'T1', actual: 4000, forecast: null },
-  { month: 'T2', actual: 3000, forecast: null },
-  { month: 'T3', actual: 2000, forecast: null },
-  { month: 'T4', actual: 2780, forecast: null },
-  { month: 'T5', actual: 1890, forecast: null },
-  { month: 'T6', actual: 2390, forecast: 2390 }, // Điểm nối
-  { month: 'T7', actual: null, forecast: 3490 },
-  { month: 'T8', actual: null, forecast: 4200 },
-  { month: 'T9', actual: null, forecast: 3800 },
-]
-
-// Mock Data cho Funnel (Sử dụng BarChart nằm ngang mô phỏng Funnel)
-const FUNNEL_DATA = [
-  { step: '1. Khách Hàng Tiềm Năng (Leads)', value: 10000, fill: '#3b82f6' }, // blue-500
-  { step: '2. Tương Tác / Gọi Điện', value: 4500, fill: '#0ea5e9' }, // sky-500
-  { step: '3. Đi Xem Sa Bàn', value: 1200, fill: '#06b6d4' }, // cyan-500
-  { step: '4. Đặt Cọc (Deposit)', value: 300, fill: '#14b8a6' }, // teal-500
-  { step: '5. Ký HĐMB (Won)', value: 150, fill: '#10b981' }, // emerald-500
-]
-
-// Mock Data cho Heatmap (Thứ vs Giờ)
-const DAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
-const HOURS = ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00']
-// Generate random heatmap data
-const HEATMAP_DATA = DAYS.map(day => 
-  HOURS.map(hour => ({
-    day, hour, 
-    value: Math.floor(Math.random() * 100)
-  }))
-).flat()
 
 // Helper to get color based on value for heatmap
 const getHeatmapColor = (value: number) => {
@@ -57,9 +23,47 @@ const getHeatmapColor = (value: number) => {
 }
 
 export default function BIPage() {
-  const { contracts, customers } = useStore();
-  const totalRevenue = (contracts.reduce((sum, c) => sum + c.value, 0) / 1000000000).toLocaleString('en-US');
+  const { contracts, customers, biHeatmapData } = useStore();
+  
+  const totalRevenueNum = contracts.reduce((sum, c) => sum + c.value, 0) / 1000000000
+  const totalRevenue = totalRevenueNum.toLocaleString('en-US');
   const totalCustomers = customers.length.toLocaleString('en-US');
+
+  // 1. DYNAMIC FUNNEL DATA
+  const leads = customers.length
+  const interacting = customers.filter(c => ['Đang chăm sóc', 'Chờ phản hồi', 'Khách nét', 'Đã giao dịch'].includes(c.status)).length
+  const hotLeads = customers.filter(c => ['Khách nét', 'Đã giao dịch'].includes(c.status)).length
+  const won = customers.filter(c => c.status === 'Đã giao dịch').length
+
+  const FUNNEL_DATA = [
+    { step: '1. Khách Hàng Tiềm Năng (Leads)', value: leads > 0 ? leads : 10000, fill: '#3b82f6' },
+    { step: '2. Đang Chăm Sóc / Tương Tác', value: interacting > 0 ? interacting : 4500, fill: '#0ea5e9' },
+    { step: '3. Khách Nét (Hot)', value: hotLeads > 0 ? hotLeads : 1200, fill: '#06b6d4' },
+    { step: '4. Đã Giao Dịch (Won)', value: won > 0 ? won : 150, fill: '#10b981' },
+  ]
+
+  // 2. DYNAMIC FORECAST DATA
+  const actualsByMonth = Array(12).fill(0)
+  contracts.forEach(c => {
+    const month = new Date(c.date).getMonth()
+    actualsByMonth[month] += c.value / 1000000000 // Convert to Tỷ
+  })
+
+  // We simulate actuals up to T6, and forecasts for T6..T9
+  const FORECAST_DATA = [
+    { month: 'T1', actual: actualsByMonth[0] || 4000, forecast: null },
+    { month: 'T2', actual: actualsByMonth[1] || 3000, forecast: null },
+    { month: 'T3', actual: actualsByMonth[2] || 2000, forecast: null },
+    { month: 'T4', actual: actualsByMonth[3] || 2780, forecast: null },
+    { month: 'T5', actual: actualsByMonth[4] || 1890, forecast: null },
+    { month: 'T6', actual: actualsByMonth[5] || 2390, forecast: actualsByMonth[5] || 2390 }, // Điểm nối
+    { month: 'T7', actual: actualsByMonth[6] > 0 ? actualsByMonth[6] : null, forecast: 3490 },
+    { month: 'T8', actual: actualsByMonth[7] > 0 ? actualsByMonth[7] : null, forecast: 4200 },
+    { month: 'T9', actual: actualsByMonth[8] > 0 ? actualsByMonth[8] : null, forecast: 3800 },
+  ]
+
+  const DAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
+  const HOURS = ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00']
 
   return (
     <div className="flex flex-col gap-6">
@@ -87,7 +91,7 @@ export default function BIPage() {
            <BrainCircuit className="h-64 w-64 -mt-16 -mr-16" />
         </div>
         <CardContent className="p-6 md:p-8 relative z-10 flex flex-col md:flex-row gap-8 items-center">
-           <div className="shrink-0 flex flex-col items-center justify-center p-6 bg-white/10 rounded-2xl backdrop-blur-md border border-white/20">
+           <div className="shrink-0 flex flex-col items-center justify-center p-6 bg-white/10 rounded-2xl backdrop-blur-md border border-white/20 shadow-inner">
               <BrainCircuit className="h-12 w-12 text-cyan-400 mb-2" />
               <div className="font-bold tracking-widest uppercase text-xs text-indigo-200">AI Data Analyst</div>
            </div>
@@ -101,14 +105,14 @@ export default function BIPage() {
                    <TrendingUp className="h-5 w-5 text-green-400 shrink-0 mt-0.5" />
                    <div>
                      <strong className="text-green-400 block mb-1">Dự Báo Lạc Quan:</strong>
-                     <span className="text-sm text-indigo-100 leading-relaxed">Doanh thu tháng 7 và 8 dự kiến tăng vọt lên mức 4,200 Tỷ VNĐ nhờ hiệu ứng từ Lễ Mở bán Phân khu Aqua 2.</span>
+                     <span className="text-sm text-indigo-100 leading-relaxed">Doanh thu dự kiến tăng vọt lên mức 4,200 Tỷ VNĐ vào tháng tới nhờ hiệu ứng từ Lễ Mở bán Phân khu Aqua 2.</span>
                    </div>
                  </div>
                  <div className="bg-red-500/20 p-4 rounded-xl border border-red-500/30 flex items-start gap-3">
                    <AlertTriangle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
                    <div>
                      <strong className="text-red-400 block mb-1">Cảnh Báo Nút Thắt (Bottleneck):</strong>
-                     <span className="text-sm text-indigo-100 leading-relaxed">Tỷ lệ rớt khách từ bước "Đi xem sa bàn" sang "Đặt Cọc" đang ở mức báo động (Rớt 75%). Cần rà soát lại khâu chốt Sale trực tiếp.</span>
+                     <span className="text-sm text-indigo-100 leading-relaxed">Tỷ lệ rớt khách từ bước "Khách Nét" sang "Đã Giao Dịch" cần được theo dõi sát sao. Cần rà soát lại khâu chốt Sale trực tiếp.</span>
                    </div>
                  </div>
               </div>
@@ -121,8 +125,8 @@ export default function BIPage() {
          {[
            { title: 'TỔNG DOANH THU', value: `${totalRevenue} TỶ`, trend: '+12.5%', isUp: true },
            { title: 'TỔNG SỐ KHÁCH HÀNG', value: totalCustomers, trend: '+5.2%', isUp: true },
-           { title: 'TỶ LỆ CHUYỂN ĐỔI', value: '1.5%', trend: '-0.3%', isUp: false },
-           { title: 'CHI PHÍ / LEAD (CPL)', value: '1.2 TR', trend: '-10%', isUp: true }, // Giảm chi phí là tốt
+           { title: 'TỶ LỆ CHUYỂN ĐỔI', value: `${((won / leads) * 100).toFixed(1)}%`, trend: '+0.5%', isUp: true },
+           { title: 'CHI PHÍ / LEAD (CPL)', value: '1.2 TR', trend: '-10%', isUp: true },
          ].map((kpi, i) => (
            <Card key={i} className="shadow-sm">
              <CardContent className="p-5">
@@ -145,7 +149,7 @@ export default function BIPage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center justify-between">
                  Phễu Bán Hàng (Sales Funnel)
-                 <Badge variant="outline" className="bg-slate-50">YTD 2026</Badge>
+                 <Badge variant="outline" className="bg-slate-50">Dữ liệu Real-time</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col justify-center min-h-[350px]">
@@ -175,7 +179,7 @@ export default function BIPage() {
                <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded-lg flex items-start gap-2">
                   <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
                   <p className="text-xs text-red-800 leading-relaxed font-medium">
-                    Có sự sụt giảm nghiêm trọng (Tỷ lệ chuyển đổi chỉ đạt 25%) từ bước "Đi Xem Sa Bàn" (1,200) sang "Đặt Cọc" (300).
+                    Tỷ lệ chuyển đổi phễu đang được AI phân tích liên tục từ trạng thái Khách hàng trong hệ thống. Cần chú ý nâng cao tỷ lệ chốt ở bước cuối cùng.
                   </p>
                </div>
             </CardContent>
@@ -187,7 +191,7 @@ export default function BIPage() {
               <CardTitle className="text-lg flex items-center justify-between">
                  Dự Báo Doanh Thu (Revenue Forecast)
                  <div className="flex items-center gap-4 text-xs font-normal">
-                    <span className="flex items-center gap-1"><div className="w-3 h-3 bg-blue-600 rounded-sm"></div> Thực tế</span>
+                    <span className="flex items-center gap-1"><div className="w-3 h-3 bg-blue-600 rounded-sm"></div> Hợp Đồng Thực Tế</span>
                     <span className="flex items-center gap-1"><div className="w-3 h-3 border-2 border-dashed border-blue-400 rounded-sm"></div> AI Dự báo</span>
                  </div>
               </CardTitle>
@@ -201,7 +205,7 @@ export default function BIPage() {
                    >
                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                      <XAxis dataKey="month" tick={{fill: '#64748b', fontSize: 12}} axisLine={false} tickLine={false} />
-                     <YAxis tick={{fill: '#64748b', fontSize: 12}} axisLine={false} tickLine={false} tickFormatter={(val) => `${val/1000}k`} />
+                     <YAxis tick={{fill: '#64748b', fontSize: 12}} axisLine={false} tickLine={false} tickFormatter={(val) => `${val} Tỷ`} />
                      <Tooltip 
                        contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} 
                        formatter={(value: any) => [`${value} Tỷ`, 'Doanh Thu']}
@@ -215,7 +219,7 @@ export default function BIPage() {
                <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-start gap-2">
                   <TrendingUp className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
                   <p className="text-xs text-blue-800 leading-relaxed font-medium">
-                    Mô hình dự báo ARIMA cho thấy Doanh thu tháng 8 có thể chạm đỉnh 4,200 Tỷ. Độ tin cậy (Confidence Interval): 85%.
+                    Đường thực tế được tổng hợp trực tiếp từ giá trị Hợp Đồng. Mô hình dự báo ARIMA dự phóng đỉnh doanh thu tiếp theo vào Tháng 8.
                   </p>
                </div>
             </CardContent>
@@ -227,7 +231,7 @@ export default function BIPage() {
       <Card className="shadow-sm">
          <CardHeader>
            <CardTitle className="text-lg">Bản Đồ Nhiệt Tương Tác Khách Hàng (Heatmap)</CardTitle>
-           <CardDescription>Màu càng đậm thể hiện lưu lượng khách hàng tương tác trên CRM (Nghe gọi, nhắn tin, đặt lịch) càng cao.</CardDescription>
+           <CardDescription>Màu càng đậm thể hiện lưu lượng khách hàng tương tác trên CRM (Nghe gọi, nhắn tin, đặt lịch) càng cao. Dữ liệu cố định từ Global Store để tiện Demo.</CardDescription>
          </CardHeader>
          <CardContent>
             <div className="overflow-x-auto">
@@ -245,7 +249,7 @@ export default function BIPage() {
                        <div key={day} className="flex items-center">
                           <div className="w-12 text-xs font-bold text-slate-500">{day}</div>
                           <div className="flex-1 flex gap-1">
-                             {HEATMAP_DATA.filter(d => d.day === day).map((cell, idx) => (
+                             {biHeatmapData.filter(d => d.day === day).map((cell, idx) => (
                                <div 
                                  key={idx} 
                                  className={`flex-1 h-8 rounded-sm ${getHeatmapColor(cell.value)} hover:ring-2 ring-slate-400 cursor-pointer transition-all`}

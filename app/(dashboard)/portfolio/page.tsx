@@ -1,5 +1,5 @@
 "use client"
-import React from 'react'
+import React, { useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -7,20 +7,13 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { Wallet, TrendingUp, DollarSign, Percent, ArrowUpRight, Briefcase } from "lucide-react"
 import { useStore } from '@/store/useStore'
 
-// Mock Data
-const PORTFOLIO_DATA = [
-  { id: "AQC-S1-12A", project: "Aqua City", type: "Nhà phố", buyPrice: 12.5, currentPrice: 15.2, rentYearly: 0.48, taxYearly: 0.05, roi: "21.6%", cagr: "10.2%" },
-  { id: "VHM-L81-45", project: "Landmark 81", type: "Căn hộ", buyPrice: 8.2, currentPrice: 9.5, rentYearly: 0.36, taxYearly: 0.04, roi: "15.8%", cagr: "7.6%" },
-  { id: "TGC-SH-05", project: "The Global City", type: "Shophouse", buyPrice: 35.0, currentPrice: 42.0, rentYearly: 1.2, taxYearly: 0.15, roi: "20.0%", cagr: "9.5%" },
-]
-
 const ASSET_GROWTH_DATA = [
   { year: '2020', value: 25.0, invested: 25.0 },
   { year: '2021', value: 28.5, invested: 25.0 },
-  { year: '2022', value: 33.2, invested: 33.2 }, // Bought new property
-  { year: '2023', value: 45.0, invested: 45.0 }, // Bought another
+  { year: '2022', value: 33.2, invested: 33.2 }, 
+  { year: '2023', value: 45.0, invested: 45.0 }, 
   { year: '2024', value: 55.7, invested: 55.7 },
-  { year: '2025', value: 66.7, invested: 55.7 }, // Current Value
+  { year: '2025', value: 66.7, invested: 55.7 }, 
 ]
 
 const CASHFLOW_DATA = [
@@ -33,9 +26,56 @@ const CASHFLOW_DATA = [
 ]
 
 export default function PortfolioPage() {
-  const { contracts } = useStore();
-  const totalInvestment = contracts.reduce((sum, c) => sum + c.value, 0) / 1000000000;
-  const currentValuation = totalInvestment * 1.197;
+  const { contracts, inventory, projects } = useStore();
+  
+  // Lọc danh sách hợp đồng đã ký
+  const signedContracts = contracts.filter(c => c.status === 'Đã ký')
+
+  // Tạo dữ liệu danh mục đầu tư (Portfolio) từ dữ liệu thật
+  const portfolioData = useMemo(() => {
+     return signedContracts.map((contract) => {
+        const item = inventory.find(i => i.id === contract.inventoryId)
+        const project = projects.find(p => p.id === contract.projectId)
+        
+        const buyPrice = contract.value / 1000000000 // Quy đổi ra Tỷ
+        
+        // Giả lập giá hiện tại (Tăng 10-25% so với giá mua)
+        // Dùng mã hợp đồng để tạo pseudo-random factor cố định cho mỗi căn
+        const randomFactor = 0.1 + ((contract.code.charCodeAt(3) || 1) % 15) / 100 // Tăng 10% - 24%
+        const currentPrice = buyPrice * (1 + randomFactor)
+
+        const capitalGainPercent = ((currentPrice - buyPrice) / buyPrice) * 100
+        const rentYearly = currentPrice * 0.03 // Giả định tỷ suất cho thuê 3% / năm
+        const taxYearly = rentYearly * 0.1 // Thuế 10% doanh thu thuê
+
+        // ROI = (Lãi vốn + Lãi thuê 1 năm) / Vốn ban đầu
+        const roi = (((currentPrice - buyPrice) + rentYearly) / buyPrice) * 100
+
+        return {
+           id: item ? item.code : contract.inventoryId,
+           project: project ? project.name : 'Dự án khác',
+           type: item ? item.type : 'Bất động sản',
+           buyPrice: buyPrice,
+           currentPrice: currentPrice,
+           rentYearly: rentYearly,
+           taxYearly: taxYearly,
+           roi: `${roi.toFixed(1)}%`,
+           cagr: `${(capitalGainPercent / 3).toFixed(1)}%` // Giả định giữ 3 năm
+        }
+     })
+  }, [signedContracts, inventory, projects])
+
+  const totalInvestment = portfolioData.reduce((sum, p) => sum + p.buyPrice, 0);
+  const currentValuation = portfolioData.reduce((sum, p) => sum + p.currentPrice, 0);
+  const totalRent = portfolioData.reduce((sum, p) => sum + p.rentYearly, 0);
+  const totalTax = portfolioData.reduce((sum, p) => sum + p.taxYearly, 0);
+  const netRent = totalRent - totalTax;
+
+  const totalCapitalGain = currentValuation - totalInvestment;
+  const capitalGainPercent = totalInvestment > 0 ? (totalCapitalGain / totalInvestment) * 100 : 0;
+  
+  // Tính IRR trung bình (Fake calc)
+  const averageIRR = totalInvestment > 0 ? (capitalGainPercent / 3 + 3.5).toFixed(1) : "0.0"; // Gain / 3 years + 3.5% rental yield
 
   return (
     <div className="flex flex-col gap-6">
@@ -69,7 +109,7 @@ export default function PortfolioPage() {
             </div>
             <div className="text-3xl font-bold">{currentValuation.toFixed(1)} Tỷ</div>
             <p className="text-sm text-emerald-100 mt-1 flex items-center gap-1">
-              <ArrowUpRight className="h-4 w-4" /> +19.7% ({(currentValuation - totalInvestment).toFixed(1)} Tỷ lãi vốn)
+              <ArrowUpRight className="h-4 w-4" /> +{capitalGainPercent.toFixed(1)}% ({totalCapitalGain.toFixed(1)} Tỷ lãi vốn)
             </p>
           </CardContent>
         </Card>
@@ -79,9 +119,9 @@ export default function PortfolioPage() {
               <span className="text-amber-100 font-medium">Dòng Tiền Thuê (Năm)</span>
               <DollarSign className="h-5 w-5 text-amber-200" />
             </div>
-            <div className="text-3xl font-bold">2.04 Tỷ</div>
+            <div className="text-3xl font-bold">{netRent.toFixed(2)} Tỷ</div>
             <p className="text-sm text-amber-100 mt-1 flex items-center gap-1">
-              Sau khi trừ 240Tr thuế phí
+              Sau khi trừ {(totalTax * 1000).toFixed(0)} Tr thuế phí
             </p>
           </CardContent>
         </Card>
@@ -91,7 +131,7 @@ export default function PortfolioPage() {
               <span className="text-purple-100 font-medium">NPV & IRR</span>
               <Percent className="h-5 w-5 text-purple-200" />
             </div>
-            <div className="text-3xl font-bold">14.2%</div>
+            <div className="text-3xl font-bold">{averageIRR}%</div>
             <p className="text-sm text-purple-100 mt-1 flex items-center gap-1">
               IRR trung bình toàn danh mục
             </p>
@@ -162,9 +202,9 @@ export default function PortfolioPage() {
           <div className="flex justify-between items-center">
             <div>
               <CardTitle>Danh Mục Bất Động Sản (Properties)</CardTitle>
-              <CardDescription>Chi tiết hiệu quả đầu tư từng tài sản độc lập.</CardDescription>
+              <CardDescription>Chi tiết hiệu quả đầu tư từng tài sản độc lập từ các hợp đồng đã ký.</CardDescription>
             </div>
-            <Badge variant="outline" className="text-sm font-normal text-muted-foreground"><Briefcase className="h-4 w-4 mr-1"/> 3 Tài sản</Badge>
+            <Badge variant="outline" className="text-sm font-normal text-muted-foreground"><Briefcase className="h-4 w-4 mr-1"/> {portfolioData.length} Tài sản</Badge>
           </div>
         </CardHeader>
         <CardContent>
@@ -184,10 +224,10 @@ export default function PortfolioPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {PORTFOLIO_DATA.map((item) => (
-                  <TableRow key={item.id}>
+                {portfolioData.length > 0 ? portfolioData.map((item, index) => (
+                  <TableRow key={index}>
                     <TableCell>
-                      <div className="font-semibold text-base">{item.id}</div>
+                      <div className="font-semibold text-base text-indigo-900">{item.id}</div>
                       <div className="text-xs text-muted-foreground">{item.project}</div>
                     </TableCell>
                     <TableCell><Badge variant="secondary">{item.type}</Badge></TableCell>
@@ -199,12 +239,18 @@ export default function PortfolioPage() {
                         {((item.currentPrice - item.buyPrice)/item.buyPrice * 100).toFixed(1)}%
                       </div>
                     </TableCell>
-                    <TableCell className="text-right text-blue-600 dark:text-blue-400 font-medium">{item.rentYearly} Tỷ</TableCell>
-                    <TableCell className="text-right text-red-500 font-medium">-{item.taxYearly} Tỷ</TableCell>
+                    <TableCell className="text-right text-blue-600 dark:text-blue-400 font-medium">{item.rentYearly.toFixed(2)} Tỷ</TableCell>
+                    <TableCell className="text-right text-red-500 font-medium">-{item.taxYearly.toFixed(2)} Tỷ</TableCell>
                     <TableCell className="text-right font-bold text-indigo-600 dark:text-indigo-400">{item.roi}</TableCell>
                     <TableCell className="text-right font-bold text-green-600 dark:text-green-400">{item.cagr}</TableCell>
                   </TableRow>
-                ))}
+                )) : (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                      Chưa có hợp đồng nào được ký để hiển thị tài sản.
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>

@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Map, MapPin, Train, Waves, CircleDollarSign, Sparkles, Loader2, X, Navigation } from 'lucide-react'
+import { useStore } from '@/store/useStore'
+import Link from 'next/link'
 
 // Load map component dynamically with SSR disabled
 const DynamicMap = dynamic(() => import('@/components/map/gis-map'), { 
@@ -14,19 +16,15 @@ const DynamicMap = dynamic(() => import('@/components/map/gis-map'), {
 })
 
 const LAYERS = [
-  { id: 'planning', label: 'Quy hoạch', icon: Map, color: 'text-orange-500' },
-  { id: 'metro', label: 'Metro', icon: Train, color: 'text-red-500' },
-  { id: 'flood', label: 'Ngập lụt', icon: Waves, color: 'text-cyan-500' },
-  { id: 'landprice', label: 'Bản đồ Giá đất', icon: CircleDollarSign, color: 'text-emerald-500' },
-]
-
-const MOCK_AI_RESULTS = [
-  { id: 1, pos: [10.768, 106.695], title: "Căn hộ Vinhomes Center", price: "2.8 Tỷ", roi: "10.5%", distance: "450m" },
-  { id: 2, pos: [10.772, 106.692], title: "Officetel The Sun", price: "2.5 Tỷ", roi: "11.2%", distance: "800m" },
-  { id: 3, pos: [10.765, 106.700], title: "Studio Riverside", price: "2.9 Tỷ", roi: "12.0%", distance: "700m" },
+  { id: 'planning', label: 'Quy hoạch sử dụng đất', icon: Map, color: 'text-orange-500' },
+  { id: 'metro', label: 'Hạ tầng giao thông (Metro)', icon: Train, color: 'text-red-500' },
+  { id: 'flood', label: 'Cảnh báo ngập lụt', icon: Waves, color: 'text-cyan-500' },
+  { id: 'landprice', label: 'Bản đồ Giá đất (Heatmap)', icon: CircleDollarSign, color: 'text-emerald-500' },
 ]
 
 export default function GISPage() {
+  const projects = useStore((state) => state.projects)
+  
   const [activeLayers, setActiveLayers] = useState<Record<string, boolean>>({
     metro: true
   })
@@ -46,11 +44,22 @@ export default function GISPage() {
     setIsSearching(true)
     setAiResults(null)
     
-    // Simulate AI NLP parsing time
+    // Simulate AI NLP parsing time, then return a matching real project (e.g., Grand Manhattan if in Q1, or Aqua City)
     setTimeout(() => {
       setIsSearching(false)
-      setAiResults(MOCK_AI_RESULTS)
-    }, 2000)
+      const queryLower = searchQuery.toLowerCase()
+      
+      let matchedProjects = []
+      if (queryLower.includes("quận 1") || queryLower.includes("trung tâm")) {
+        matchedProjects = projects.filter(p => p.id === 'p3') // Grand Manhattan
+      } else if (queryLower.includes("đồng nai") || queryLower.includes("sinh thái")) {
+        matchedProjects = projects.filter(p => p.id === 'p2') // Aqua City
+      } else {
+        matchedProjects = projects.filter(p => p.id === 'p3') // Default match
+      }
+      
+      setAiResults(matchedProjects)
+    }, 1500)
   }
 
   const clearAI = () => {
@@ -66,7 +75,7 @@ export default function GISPage() {
              <Map className="h-8 w-8 text-indigo-500" />
              Bản Đồ GIS & AI Search
            </h1>
-           <p className="text-muted-foreground mt-1">Chat với bản đồ để khoanh vùng sản phẩm ngay lập tức.</p>
+           <p className="text-muted-foreground mt-1">Chat với bản đồ để tìm kiếm và khoanh vùng dự án phù hợp nhất.</p>
          </div>
       </div>
 
@@ -82,83 +91,85 @@ export default function GISPage() {
                  <Input 
                    value={searchQuery}
                    onChange={e => setSearchQuery(e.target.value)}
-                   placeholder="Nhập yêu cầu: 'Tìm căn dưới 3 tỷ, gần Metro bán kính 1km, ROI > 10%'"
-                   className="border-0 focus-visible:ring-0 shadow-none text-base bg-transparent flex-1"
+                   placeholder="Nhập yêu cầu: 'Tìm dự án Quận 1 gần Metro'"
+                   className="border-0 focus-visible:ring-0 shadow-none text-base bg-transparent flex-1 h-12"
                  />
                  {aiResults && (
-                   <button type="button" onClick={clearAI} className="p-2 text-muted-foreground hover:text-foreground">
+                   <button type="button" onClick={clearAI} className="p-2 text-muted-foreground hover:text-foreground mr-2">
                      <X className="h-5 w-5" />
                    </button>
                  )}
-                 <Button type="submit" disabled={isSearching} className="rounded-none rounded-r-full px-6 bg-indigo-600 hover:bg-indigo-700">
+                 <Button type="submit" disabled={isSearching} className="h-12 rounded-none rounded-r-full px-8 bg-indigo-600 hover:bg-indigo-700 font-bold">
                     Tìm kiếm AI
                  </Button>
               </form>
               
               {/* AI NLP Status popup */}
               {isSearching && (
-                <div className="absolute top-14 left-1/2 transform -translate-x-1/2 bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-xl flex items-center gap-2 text-sm whitespace-nowrap animate-in slide-in-from-top-4">
+                <div className="absolute top-16 left-1/2 transform -translate-x-1/2 bg-indigo-600 text-white px-4 py-2 rounded-full shadow-xl flex items-center gap-2 text-sm whitespace-nowrap animate-in slide-in-from-top-4">
                    <Sparkles className="h-4 w-4 animate-pulse" />
-                   AI đang phân tích: {searchQuery}
+                   AI đang quét bản đồ: {searchQuery}...
                 </div>
               )}
             </div>
 
             <DynamicMap activeLayers={activeLayers} aiResults={aiResults} />
             
-            {/* Standard Layers Control Overlay (Moved to map corner) */}
-            {!aiResults && (
-              <div className="absolute top-24 left-4 z-[400] bg-white/95 dark:bg-gray-950/95 backdrop-blur-md p-3 rounded-xl shadow-lg border">
-                 <h4 className="font-bold text-sm mb-2 px-1">Layers</h4>
-                 <div className="flex flex-col gap-1">
-                   {LAYERS.map(l => (
-                     <label key={l.id} className="flex items-center gap-2 text-sm p-1.5 hover:bg-muted rounded cursor-pointer">
-                       <input type="checkbox" checked={!!activeLayers[l.id]} onChange={() => toggleLayer(l.id)} />
-                       <l.icon className={`h-4 w-4 ${l.color}`} />
-                       <span>{l.label}</span>
-                     </label>
-                   ))}
-                 </div>
-              </div>
-            )}
+            {/* Standard Layers Control Overlay */}
+            <div className="absolute top-24 left-4 z-[400] bg-white/95 dark:bg-gray-950/95 backdrop-blur-md p-4 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800 min-w-[220px]">
+               <h4 className="font-bold text-sm mb-3 px-1 text-gray-800 dark:text-gray-200 uppercase tracking-wider">Lớp dữ liệu (Layers)</h4>
+               <div className="flex flex-col gap-1">
+                 {LAYERS.map(l => (
+                   <label key={l.id} className="flex items-center gap-3 text-sm p-2 hover:bg-muted rounded-lg cursor-pointer transition-colors border border-transparent hover:border-gray-200 dark:hover:border-gray-800">
+                     <input type="checkbox" checked={!!activeLayers[l.id]} onChange={() => toggleLayer(l.id)} className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" />
+                     <l.icon className={`h-5 w-5 ${l.color}`} />
+                     <span className="font-medium text-gray-700 dark:text-gray-300">{l.label}</span>
+                   </label>
+                 ))}
+               </div>
+            </div>
          </div>
 
          {/* AI Results Drawer (Right side) */}
-         {aiResults && (
+         {aiResults && aiResults.length > 0 && (
             <Card className="w-full md:w-80 lg:w-96 flex-shrink-0 flex flex-col overflow-hidden bg-background border shadow-xl animate-in slide-in-from-right-8">
                <div className="p-4 border-b bg-indigo-50 dark:bg-indigo-950/20">
                  <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 mb-1">
-                   <Sparkles className="h-4 w-4" />
-                   <h3 className="font-semibold">AI Match Results</h3>
+                   <Sparkles className="h-5 w-5" />
+                   <h3 className="font-bold text-lg">AI Match Results</h3>
                  </div>
-                 <p className="text-xs font-medium opacity-80 mt-2">Tiêu chí: Giá &lt; 3 Tỷ • Gần Metro &lt; 1km • ROI &gt; 10%</p>
+                 <p className="text-sm font-medium text-indigo-800/70 dark:text-indigo-300/70 mt-2">Tìm thấy {aiResults.length} kết quả phù hợp nhất</p>
                </div>
-               <div className="overflow-y-auto p-4 flex-1 space-y-3 bg-muted/20">
-                  {aiResults.map((item: any) => (
-                    <div key={item.id} className="bg-background p-4 rounded-xl border shadow-sm hover:border-indigo-300 transition-colors cursor-pointer group">
-                       <div className="flex justify-between items-start mb-2">
-                         <h4 className="font-bold group-hover:text-indigo-600 transition-colors">{item.title}</h4>
-                         <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Match 98%</Badge>
+               <div className="overflow-y-auto p-4 flex-1 space-y-4 bg-slate-50 dark:bg-slate-900/50">
+                  {aiResults.map((project: any) => (
+                    <div key={project.id} className="bg-white dark:bg-gray-950 rounded-xl border shadow-sm overflow-hidden hover:border-indigo-400 hover:shadow-md transition-all group">
+                       <div className="h-32 w-full relative">
+                         <img src={project.thumbnail} alt={project.name} className="w-full h-full object-cover" />
+                         <Badge className="absolute top-2 left-2 bg-green-500 hover:bg-green-600">Phù hợp 98%</Badge>
                        </div>
-                       <div className="grid grid-cols-2 gap-2 text-sm mb-3">
-                          <div>
-                            <span className="text-muted-foreground block text-xs">Giá bán</span>
-                            <span className="font-bold text-indigo-600">{item.price}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground block text-xs">ROI cam kết</span>
-                            <span className="font-bold text-green-600">{item.roi}</span>
-                          </div>
-                       </div>
-                       <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted p-1.5 rounded-md w-fit">
-                          <Navigation className="h-3 w-3" />
-                          Cách Metro {item.distance}
+                       <div className="p-4">
+                         <h4 className="font-bold text-lg group-hover:text-indigo-600 transition-colors mb-1">{project.name}</h4>
+                         <p className="text-sm text-muted-foreground flex items-center gap-1 mb-3">
+                           <MapPin className="h-3 w-3" /> {project.location}
+                         </p>
+                         
+                         <div className="grid grid-cols-2 gap-2 text-sm mb-4">
+                            <div className="bg-slate-50 dark:bg-slate-900 p-2 rounded">
+                              <span className="text-muted-foreground block text-xs">Loại hình</span>
+                              <span className="font-semibold text-slate-800 dark:text-slate-200">{project.type}</span>
+                            </div>
+                            <div className="bg-indigo-50 dark:bg-indigo-900/30 p-2 rounded">
+                              <span className="text-indigo-600 dark:text-indigo-400 block text-xs">AI Rating</span>
+                              <span className="font-bold text-indigo-700 dark:text-indigo-300">{project.aiAnalysis?.rating || 'BUY'}</span>
+                            </div>
+                         </div>
+                         
+                         <Link href={`/projects/${project.id}`}>
+                           <Button variant="outline" className="w-full border-indigo-200 text-indigo-700 hover:bg-indigo-50">Xem Chi Tiết</Button>
+                         </Link>
                        </div>
                     </div>
                   ))}
-               </div>
-               <div className="p-4 border-t bg-background">
-                 <Button className="w-full bg-indigo-600 hover:bg-indigo-700">Lưu bộ lọc này</Button>
                </div>
             </Card>
          )}

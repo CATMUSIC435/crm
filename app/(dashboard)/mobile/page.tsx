@@ -1,5 +1,6 @@
 "use client"
 import React, { useState, useRef, useEffect } from 'react'
+import { useStore } from '@/store/useStore'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -7,14 +8,21 @@ import { Input } from "@/components/ui/input"
 
 import { 
   Smartphone, Wifi, WifiOff, MapPin, QrCode, PenTool, 
-  Bell, Send, CheckCircle2, RotateCw, Fingerprint, Camera, Radio
+  Bell, Send, CheckCircle2, RotateCw, Fingerprint, Camera, Radio, X
 } from 'lucide-react'
 
 export default function MobileHubPage() {
+  const { syncQueue, mobileNotifications, addSyncTask, clearSyncQueue, sendMobileNotification } = useStore()
+  
   const [isOffline, setIsOffline] = useState(false)
-  const [syncQueue, setSyncQueue] = useState<{id: number, task: string, time: string}[]>([])
   const [activeAppTab, setActiveAppTab] = useState('sign')
   const [isSyncing, setIsSyncing] = useState(false)
+
+  // Push Notification state
+  const [notifTitle, setNotifTitle] = useState('🔥 Khẩn cấp: Bảng hàng Aqua City vừa mở!')
+  const [notifMessage, setNotifMessage] = useState('Có 5 căn Biệt thự góc vừa bung ra, anh em chốt ngay khách VIP nhé!')
+  const [showToast, setShowToast] = useState(false)
+  const [currentToast, setCurrentToast] = useState<{title: string, message: string} | null>(null)
 
   // Canvas ref for signature
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -27,7 +35,7 @@ export default function MobileHubPage() {
         // Turning online -> auto sync
         setIsSyncing(true)
         setTimeout(() => {
-           setSyncQueue([])
+           clearSyncQueue()
            setIsSyncing(false)
         }, 2000)
      }
@@ -36,7 +44,7 @@ export default function MobileHubPage() {
   // Handle Save Action (Sign or GPS)
   const handleSaveAction = (taskName: string) => {
      if (isOffline) {
-        setSyncQueue(prev => [...prev, { id: Date.now(), task: taskName, time: new Date().toLocaleTimeString() }])
+        addSyncTask(taskName)
      } else {
         // Online -> sync immediately
         setIsSyncing(true)
@@ -97,6 +105,25 @@ export default function MobileHubPage() {
      }
   }, [isDrawing])
 
+  // Effect to show toast when a new notification arrives
+  useEffect(() => {
+    if (mobileNotifications.length > 0) {
+      const latestNotif = mobileNotifications[mobileNotifications.length - 1]
+      setCurrentToast({ title: latestNotif.title, message: latestNotif.message })
+      setShowToast(true)
+      
+      const timer = setTimeout(() => {
+        setShowToast(false)
+      }, 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [mobileNotifications])
+
+  const handleSendNotification = () => {
+    if (!notifTitle.trim() || !notifMessage.trim()) return
+    sendMobileNotification(notifTitle, notifMessage)
+  }
+
   return (
     <div className="flex flex-col gap-6">
       
@@ -121,6 +148,27 @@ export default function MobileHubPage() {
             {/* SCREEN */}
             <div className="relative w-full h-full bg-slate-50 flex flex-col overflow-hidden">
                
+               {/* Toast Notification (iOS Style) */}
+               <div 
+                 className={`absolute top-10 left-2 right-2 bg-slate-800/95 backdrop-blur-md text-white p-3 rounded-2xl shadow-2xl z-50 transition-all duration-500 ease-out flex flex-col gap-1 cursor-pointer
+                   ${showToast ? 'translate-y-0 opacity-100 scale-100' : '-translate-y-24 opacity-0 scale-95 pointer-events-none'}
+                 `}
+                 onClick={() => setShowToast(false)}
+               >
+                 <div className="flex justify-between items-center">
+                   <div className="flex items-center gap-2">
+                     <div className="w-5 h-5 bg-fuchsia-500 rounded flex items-center justify-center">
+                       <Bell className="h-3 w-3 text-white" />
+                     </div>
+                     <span className="text-xs font-bold opacity-80">NOVA CRM</span>
+                   </div>
+                   <span className="text-[10px] opacity-60">bây giờ</span>
+                 </div>
+                 <div className="font-bold text-sm mt-1 leading-tight">{currentToast?.title}</div>
+                 <div className="text-xs opacity-90 line-clamp-2 leading-relaxed">{currentToast?.message}</div>
+                 <div className="w-8 h-1 bg-white/20 rounded-full self-center mt-1"></div>
+               </div>
+
                {/* Status Bar */}
                <div className={`h-12 flex justify-between items-end px-6 pb-2 text-xs font-bold transition-colors ${isOffline ? 'bg-red-500 text-white' : 'bg-slate-100 text-slate-800'}`}>
                   <div>09:41</div>
@@ -143,7 +191,7 @@ export default function MobileHubPage() {
                   </div>
 
                   {/* Body Content */}
-                  <div className="flex-1 overflow-y-auto bg-slate-100 p-4">
+                  <div className="flex-1 overflow-y-auto bg-slate-100 p-4 relative">
                      
                      {/* TAB: SIGNATURE */}
                      {activeAppTab === 'sign' && (
@@ -230,14 +278,14 @@ export default function MobileHubPage() {
                   </div>
 
                   {/* Bottom Navigation */}
-                  <div className="h-16 bg-white border-t flex justify-around items-center text-[10px] font-medium text-slate-500 pb-2 px-2">
-                     <button onClick={() => setActiveAppTab('tools')} className={`flex flex-col items-center p-2 ${activeAppTab === 'tools' ? 'text-fuchsia-600' : ''}`}>
+                  <div className="h-16 bg-white border-t flex justify-around items-center text-[10px] font-medium text-slate-500 pb-2 px-2 shrink-0">
+                     <button onClick={() => setActiveAppTab('tools')} className={`flex flex-col items-center p-2 transition-colors ${activeAppTab === 'tools' ? 'text-fuchsia-600' : ''}`}>
                         <Radio className="h-5 w-5 mb-1" /> Công cụ
                      </button>
-                     <button onClick={() => setActiveAppTab('sign')} className={`flex flex-col items-center p-2 ${activeAppTab === 'sign' ? 'text-fuchsia-600' : ''}`}>
+                     <button onClick={() => setActiveAppTab('sign')} className={`flex flex-col items-center p-2 transition-colors ${activeAppTab === 'sign' ? 'text-fuchsia-600' : ''}`}>
                         <PenTool className="h-5 w-5 mb-1" /> Ký Hợp Đồng
                      </button>
-                     <button className="flex flex-col items-center p-2 opacity-50">
+                     <button className="flex flex-col items-center p-2 opacity-50 cursor-not-allowed">
                         <Fingerprint className="h-5 w-5 mb-1" /> Vân Tay
                      </button>
                   </div>
@@ -302,13 +350,22 @@ export default function MobileHubPage() {
                <CardContent className="p-6 space-y-4">
                   <div>
                      <label className="text-sm font-medium mb-1 block">Tiêu đề thông báo</label>
-                     <Input defaultValue="🔥 Khẩn cấp: Bảng hàng Aqua City vừa mở!" />
+                     <Input 
+                       value={notifTitle}
+                       onChange={(e) => setNotifTitle(e.target.value)}
+                     />
                   </div>
                   <div>
                      <label className="text-sm font-medium mb-1 block">Nội dung</label>
-                     <Input defaultValue="Có 5 căn Biệt thự góc vừa bung ra, anh em chốt ngay khách VIP nhé!" />
+                     <Input 
+                       value={notifMessage}
+                       onChange={(e) => setNotifMessage(e.target.value)}
+                     />
                   </div>
-                  <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white">
+                  <Button 
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold"
+                    onClick={handleSendNotification}
+                  >
                      <Send className="h-4 w-4 mr-2" /> Bắn thông báo Broadcast
                   </Button>
                </CardContent>

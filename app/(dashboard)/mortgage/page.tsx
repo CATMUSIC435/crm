@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Calculator, Landmark, Building, Calendar, PiggyBank, CircleDollarSign } from 'lucide-react'
+import { Calculator, Landmark, Building, Calendar, PiggyBank, CircleDollarSign, Info } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts'
+import { useStore } from '@/store/useStore'
 
 const BANKS = [
   { id: 'vcb', name: 'Vietcombank', rate: 6.5, logo: 'VCB' },
@@ -17,10 +18,25 @@ const BANKS = [
 ]
 
 export default function MortgagePage() {
+  const { inventory } = useStore()
+  const availableInventory = inventory.filter(i => i.status === 'Trống' || i.status === 'Booking')
+
   const [propertyValue, setPropertyValue] = useState(3000000000)
   const [loanPercent, setLoanPercent] = useState(70)
   const [loanTerm, setLoanTerm] = useState(20)
   const [selectedBank, setSelectedBank] = useState(BANKS[0])
+  const [selectedItem, setSelectedItem] = useState<string>("")
+
+  const handleSelectProperty = (e: React.ChangeEvent<HTMLSelectElement>) => {
+     const id = e.target.value
+     setSelectedItem(id)
+     if (id) {
+        const item = availableInventory.find(i => i.id === id)
+        if (item) {
+           setPropertyValue(item.price)
+        }
+     }
+  }
 
   // Lógica Tính toán
   const loanAmount = (propertyValue * loanPercent) / 100
@@ -90,27 +106,59 @@ export default function MortgagePage() {
         
         {/* PANEL TRÁI: Nhập Liệu & So Sánh Ngân Hàng */}
         <div className="lg:col-span-1 space-y-6">
-           <Card className="shadow-md border-indigo-100">
+           
+           <Card className="shadow-md border-indigo-100 relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                <Building className="h-24 w-24" />
+             </div>
              <CardHeader className="bg-indigo-50/50 border-b pb-4">
+               <CardTitle className="text-lg text-indigo-900">Liên Kết Giỏ Hàng</CardTitle>
+               <CardDescription>Chọn sản phẩm tư vấn để tự động điền giá</CardDescription>
+             </CardHeader>
+             <CardContent className="pt-6">
+                <select 
+                  className="w-full bg-slate-50 border border-slate-300 rounded-lg py-2.5 px-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow"
+                  value={selectedItem}
+                  onChange={handleSelectProperty}
+                >
+                  <option value="">-- Chọn Sản Phẩm Đang Mở Bán --</option>
+                  {availableInventory.map(item => (
+                     <option key={item.id} value={item.id}>
+                        [{item.code}] {item.type} - {formatVND(item.price)}
+                     </option>
+                  ))}
+                </select>
+                {selectedItem && (
+                   <div className="mt-3 text-xs flex items-start gap-1.5 text-indigo-700 bg-indigo-50 p-2 rounded border border-indigo-100">
+                      <Info className="h-4 w-4 shrink-0 mt-0.5" />
+                      <span>Đã đồng bộ giá trị sản phẩm <strong>{availableInventory.find(i => i.id === selectedItem)?.code}</strong> vào công cụ tính toán.</span>
+                   </div>
+                )}
+             </CardContent>
+           </Card>
+
+           <Card className="shadow-md border-slate-200">
+             <CardHeader className="bg-slate-50/50 border-b pb-4">
                <CardTitle className="text-lg">Thông Số Khoản Vay</CardTitle>
              </CardHeader>
              <CardContent className="pt-6 space-y-5">
                 <div className="space-y-2">
                   <Label className="text-muted-foreground flex justify-between">
                     <span>Giá trị Bất Động Sản</span>
-                    <span className="font-bold text-indigo-600">{formatVND(propertyValue)}</span>
+                    <span className="font-bold text-slate-800">{formatVND(propertyValue)}</span>
                   </Label>
                   <Input 
-                    type="range" min={500000000} max={20000000000} step={100000000}
-                    value={propertyValue} onChange={e => setPropertyValue(Number(e.target.value))}
+                    type="range" min={500000000} max={40000000000} step={100000000}
+                    value={propertyValue} onChange={e => { setPropertyValue(Number(e.target.value)); setSelectedItem("") }}
                     className="accent-indigo-600"
                   />
+                  {selectedItem && <p className="text-[10px] text-muted-foreground text-right">Kéo thanh trượt sẽ hủy liên kết sản phẩm.</p>}
                 </div>
                 
                 <div className="space-y-2">
                   <Label className="text-muted-foreground flex justify-between">
                     <span>Tỷ lệ vay (%)</span>
-                    <span className="font-bold text-indigo-600">{loanPercent}%</span>
+                    <span className="font-bold text-slate-800">{loanPercent}%</span>
                   </Label>
                   <Input 
                     type="range" min={10} max={90} step={5}
@@ -125,7 +173,7 @@ export default function MortgagePage() {
                 <div className="space-y-2">
                   <Label className="text-muted-foreground flex justify-between">
                     <span>Thời hạn vay (Năm)</span>
-                    <span className="font-bold text-indigo-600">{loanTerm} Năm</span>
+                    <span className="font-bold text-slate-800">{loanTerm} Năm</span>
                   </Label>
                   <Input 
                     type="range" min={5} max={35} step={1}
@@ -138,7 +186,7 @@ export default function MortgagePage() {
 
            <Card className="shadow-md">
              <CardHeader className="pb-4">
-               <CardTitle className="text-lg flex items-center gap-2"><Landmark className="h-5 w-5" /> So Sánh Ngân Hàng</CardTitle>
+               <CardTitle className="text-lg flex items-center gap-2"><Landmark className="h-5 w-5 text-slate-600" /> So Sánh Ngân Hàng</CardTitle>
              </CardHeader>
              <CardContent className="p-0">
                <div className="divide-y">
@@ -153,7 +201,7 @@ export default function MortgagePage() {
                            {bank.logo}
                         </div>
                         <div>
-                          <div className="font-bold">{bank.name}</div>
+                          <div className="font-bold text-slate-800">{bank.name}</div>
                           <div className="text-xs text-muted-foreground">Lãi suất ưu đãi năm đầu</div>
                         </div>
                      </div>
@@ -181,8 +229,8 @@ export default function MortgagePage() {
               </Card>
               <Card className="bg-white border shadow-md">
                 <CardContent className="p-6">
-                   <div className="text-muted-foreground font-medium mb-1 flex items-center gap-2"><PiggyBank className="h-4 w-4" /> Vốn Tự Có Cần Chuẩn Bị</div>
-                   <div className="text-3xl font-bold text-gray-800">{formatVND(propertyValue - loanAmount)}</div>
+                   <div className="text-muted-foreground font-medium mb-1 flex items-center gap-2"><PiggyBank className="h-4 w-4 text-emerald-500" /> Vốn Tự Có Cần Chuẩn Bị</div>
+                   <div className="text-3xl font-bold text-slate-800">{formatVND(propertyValue - loanAmount)}</div>
                    <div className="text-xs mt-2 text-muted-foreground">Chiếm {100 - loanPercent}% giá trị BĐS</div>
                 </CardContent>
               </Card>
@@ -258,7 +306,7 @@ export default function MortgagePage() {
                  </Table>
                </div>
                <div className="mt-4 text-center">
-                 <Button variant="outline" className="w-full">Tải Về File Excel Bảng Tính Đầy Đủ ({totalMonths} Tháng)</Button>
+                 <Button variant="outline" className="w-full border-indigo-200 text-indigo-700 hover:bg-indigo-50">Tải Về File Excel Bảng Tính Đầy Đủ ({totalMonths} Tháng)</Button>
                </div>
              </CardContent>
            </Card>

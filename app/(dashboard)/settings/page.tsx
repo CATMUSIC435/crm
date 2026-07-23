@@ -14,6 +14,7 @@ import {
 const SETTINGS_MENU = [
   { id: 'rbac', label: 'Phân Quyền (RBAC)', icon: <Shield className="h-4 w-4" /> },
   { id: 'multitenant', label: 'Cấu Hình Đa Công Ty', icon: <Building2 className="h-4 w-4" /> },
+  { id: 'security', label: 'Bảo Mật & Đăng Nhập', icon: <Key className="h-4 w-4" /> },
   { id: 'audit', label: 'Nhật Ký (Audit Log)', icon: <History className="h-4 w-4" /> },
   { id: 'api', label: 'Tích Hợp API / Webhook', icon: <Webhook className="h-4 w-4" /> },
   { id: 'backup', label: 'Sao Lưu & Khôi Phục', icon: <DatabaseBackup className="h-4 w-4" /> },
@@ -25,6 +26,11 @@ const RBAC_PERMISSIONS = [
   { id: 3, name: 'Xuất (Export) Dữ liệu ra Excel', admin: true, manager: false, agent: false, external: false },
   { id: 4, name: 'Tạo Giỏ hàng bán chéo', admin: true, manager: true, agent: true, external: true },
   { id: 5, name: 'Đổi bảng giá dự án', admin: true, manager: false, agent: false, external: false },
+  { id: 6, name: 'Phê duyệt Hợp đồng/Deal', admin: true, manager: true, agent: false, external: false },
+  { id: 7, name: 'Xóa Khách hàng (Hard Delete)', admin: true, manager: false, agent: false, external: false },
+  { id: 8, name: 'Cấu hình chiết khấu/khuyến mãi', admin: true, manager: true, agent: false, external: false },
+  { id: 9, name: 'Xem Báo cáo Doanh thu', admin: true, manager: true, agent: false, external: false },
+  { id: 10, name: 'Cấu hình KPI', admin: true, manager: true, agent: false, external: false },
 ]
 
 const AUDIT_LOGS = [
@@ -32,6 +38,10 @@ const AUDIT_LOGS = [
   { id: 2, time: '17:45 19/07/2026', user: 'Trần Văn Đạt', ip: '113.190.22.1', action: 'UPDATE_CONTRACT', detail: 'Thay đổi giá trị HĐ #HD-928', status: 'SUCCESS' },
   { id: 3, time: '16:30 19/07/2026', user: 'System', ip: '127.0.0.1', action: 'AUTO_BACKUP', detail: 'Sao lưu DB tự động (2.4GB)', status: 'SUCCESS' },
   { id: 4, time: '14:15 19/07/2026', user: 'Nguyễn Tuấn Tú', ip: '14.232.11.89', action: 'FAILED_LOGIN', detail: 'Sai mật khẩu 5 lần', status: 'DANGER' },
+  { id: 5, time: '12:00 19/07/2026', user: 'Phạm Thị Mai', ip: '118.69.112.55', action: 'DELETE_CUSTOMER', detail: 'Xóa vĩnh viễn KH Nguyễn Văn A', status: 'WARNING' },
+  { id: 6, time: '09:30 19/07/2026', user: 'Lê Hoàng Anh', ip: '192.168.1.45', action: 'APPROVE_DEAL', detail: 'Phê duyệt HĐ #HD-927 (5.4 Tỷ)', status: 'SUCCESS' },
+  { id: 7, time: '08:15 19/07/2026', user: 'Unknown', ip: '45.122.19.2', action: 'UNAUTHORIZED_API', detail: 'Truy cập API bằng token hết hạn', status: 'DANGER' },
+  { id: 8, time: '23:00 18/07/2026', user: 'System', ip: '127.0.0.1', action: 'SYNC_ERP', detail: 'Đồng bộ 120 đơn hàng sang MISA ERP', status: 'SUCCESS' },
 ]
 
 export default function SystemSettingsPage() {
@@ -172,6 +182,52 @@ export default function SystemSettingsPage() {
                      </div>
 
                   </CardContent>
+               </Card>
+            )}
+
+            {/* SECURITY */}
+            {activeTab === 'security' && (
+               <Card className="shadow-sm">
+                  <CardHeader className="border-b">
+                     <CardTitle className="flex items-center gap-2"><Key className="h-5 w-5 text-indigo-600" /> Bảo Mật & Đăng Nhập</CardTitle>
+                     <CardDescription>Cấu hình các lớp bảo vệ tài khoản và chính sách mật khẩu.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-4 md:p-6 space-y-6">
+                     <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50">
+                        <div>
+                           <div className="font-bold text-slate-800">Xác thực 2 yếu tố (2FA) bắt buộc</div>
+                           <div className="text-sm text-slate-500">Yêu cầu tất cả nhân viên sử dụng Google Authenticator hoặc OTP.</div>
+                        </div>
+                        <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-green-500">
+                           <span className="inline-block h-4 w-4 transform rounded-full bg-white transition translate-x-6" />
+                        </div>
+                     </div>
+                     <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50">
+                        <div>
+                           <div className="font-bold text-slate-800">Đăng nhập bằng IP nội bộ (Whitelist)</div>
+                           <div className="text-sm text-slate-500">Chỉ cho phép đăng nhập từ mạng công ty (113.190.22.*, 14.232.11.*).</div>
+                        </div>
+                        <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-slate-300">
+                           <span className="inline-block h-4 w-4 transform rounded-full bg-white transition translate-x-1" />
+                        </div>
+                     </div>
+                     <div className="space-y-4 pt-4 border-t">
+                        <h3 className="font-bold text-slate-800">Chính sách Mật khẩu</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                           <div>
+                              <label className="text-sm font-medium mb-1 block text-slate-600">Độ dài tối thiểu</label>
+                              <Input type="number" defaultValue="12" />
+                           </div>
+                           <div>
+                              <label className="text-sm font-medium mb-1 block text-slate-600">Chu kỳ thay đổi mật khẩu (Ngày)</label>
+                              <Input type="number" defaultValue="90" />
+                           </div>
+                        </div>
+                     </div>
+                  </CardContent>
+                  <CardFooter className="p-4 border-t bg-slate-50 justify-end">
+                     <Button className="bg-blue-600 hover:bg-blue-700 text-white"><Save className="h-4 w-4 mr-2"/> Lưu Thiết Lập</Button>
+                  </CardFooter>
                </Card>
             )}
 

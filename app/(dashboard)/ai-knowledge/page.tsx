@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -9,19 +9,103 @@ import {
   Search, Send, FileSpreadsheet, CheckCircle2, 
   RefreshCw, Bot, User, AlertCircle, FileArchive, Layers
 } from 'lucide-react'
+import { useStore } from '@/store/useStore'
 
-// Mock Data cho Knowledge Base Files
-const KNOWLEDGE_FILES = [
-  { id: 1, name: 'Chinh_Sach_Ban_Hang_Aqua_T7.pdf', type: 'policy', icon: <FileText className="h-5 w-5 text-red-500" />, status: 'learned', size: '2.4 MB', date: 'Hôm nay' },
-  { id: 2, name: 'Brochure_Du_An_AquaCity_2026.pdf', type: 'brochure', icon: <FileText className="h-5 w-5 text-red-500" />, status: 'learned', size: '15.1 MB', date: 'Hôm qua' },
-  { id: 3, name: 'Bang_Gia_Tham_Khao_PhanKhu2.xlsx', type: 'price', icon: <FileSpreadsheet className="h-5 w-5 text-green-600" />, status: 'learned', size: '1.1 MB', date: '15/07' },
-  { id: 4, name: 'Luat_Kinh_Doanh_BDS_SuaDoi.pdf', type: 'law', icon: <BookOpen className="h-5 w-5 text-blue-500" />, status: 'learning', size: '5.2 MB', date: 'Vừa tải lên' },
-  { id: 5, name: 'FAQ_Cau_Hoi_Thuong_Gap_Cho_Sale.docx', type: 'faq', icon: <FileText className="h-5 w-5 text-blue-600" />, status: 'learned', size: '0.8 MB', date: '10/07' },
-  { id: 6, name: 'Quy_Hoach_1_500_Dong_Nai.zip', type: 'planning', icon: <FileArchive className="h-5 w-5 text-orange-500" />, status: 'error', size: '120 MB', date: '05/07' },
-]
+const getFileIcon = (type: string) => {
+  switch (type) {
+    case 'policy': return <FileText className="h-5 w-5 text-red-500" />
+    case 'brochure': return <FileText className="h-5 w-5 text-red-500" />
+    case 'price': return <FileSpreadsheet className="h-5 w-5 text-green-600" />
+    case 'law': return <BookOpen className="h-5 w-5 text-blue-500" />
+    case 'faq': return <FileText className="h-5 w-5 text-blue-600" />
+    case 'planning': return <FileArchive className="h-5 w-5 text-orange-500" />
+    default: return <FileText className="h-5 w-5 text-slate-500" />
+  }
+}
+
+const renderMessageContent = (content: string) => {
+   return content.split('\n').map((line, i) => {
+      if (!line.trim()) return null;
+      if (line.startsWith('- ')) {
+         return <li key={i} className="ml-4 list-disc" dangerouslySetInnerHTML={{__html: line.substring(2).replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-700">$1</strong>')}}></li>
+      }
+      return <p key={i} className={i !== 0 ? "mt-2" : ""} dangerouslySetInnerHTML={{__html: line.replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-700">$1</strong>')}}></p>
+   })
+}
 
 export default function AIKnowledgePage() {
+  const { knowledgeFiles, aiChatHistory, addKnowledgeFile, updateKnowledgeFileStatus, addAIChatMessage } = useStore()
+  
   const [inputText, setInputText] = useState('')
+  const [isTyping, setIsTyping] = useState(false)
+  const chatEndRef = useRef<HTMLDivElement>(null)
+
+  // Auto scroll to bottom
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [aiChatHistory, isTyping])
+
+  const handleSendMessage = () => {
+    if (!inputText.trim() || isTyping) return
+    
+    // 1. Add User Message
+    addAIChatMessage({
+      role: 'user',
+      content: inputText,
+      time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+    })
+    
+    const userText = inputText.toLowerCase()
+    setInputText('')
+    setIsTyping(true)
+
+    // 2. Simulate AI Thinking & Responding
+    setTimeout(() => {
+       let aiResponse = ''
+       let citations: string[] = []
+
+       if (userText.includes('pháp lý') || userText.includes('aqua')) {
+          aiResponse = 'Dựa trên tài liệu "Luat_Kinh_Doanh_BDS_SuaDoi.pdf" và quy hoạch hiện tại:\n\n- Dự án Aqua City đã hoàn thiện **100%** thủ tục pháp lý 1/500.\n- Sẵn sàng ký HĐMB cho các phân khu đã mở bán.\n\nKhách hàng có thể hoàn toàn yên tâm về tiến độ cấp sổ.'
+          citations = ['Luat_Kinh_Doanh_BDS_SuaDoi.pdf', 'Quy_Hoach_1_500_Dong_Nai.zip']
+       } else if (userText.includes('giá') || userText.includes('bảng giá')) {
+          aiResponse = 'Cập nhật theo Bảng giá mới nhất:\n\n- Phân khu 2 (Nhà phố 6x20m): Giá từ **8.5 tỷ - 9.2 tỷ**.\n- Biệt thự song lập: Giá từ **14 tỷ - 16 tỷ**.\n\nLưu ý giá trên chưa bao gồm VAT và các chương trình chiết khấu thanh toán nhanh.'
+          citations = ['Bang_Gia_Tham_Khao_PhanKhu2.xlsx']
+       } else {
+          aiResponse = 'Cảm ơn bạn đã đặt câu hỏi. Dựa trên kho dữ liệu hiện tại, AI đang tổng hợp thông tin để đưa ra chiến lược tốt nhất. Bạn có thể cung cấp thêm chi tiết về nhu cầu của khách hàng được không?'
+       }
+
+       addAIChatMessage({
+          role: 'ai',
+          content: aiResponse,
+          citations,
+          time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+       })
+       setIsTyping(false)
+    }, 2000)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSendMessage()
+    }
+  }
+
+  const handleUploadFile = () => {
+    const newId = Date.now()
+    addKnowledgeFile({
+      id: newId,
+      name: `Quy_Trinh_Cham_Soc_Khach_VIP_${newId.toString().slice(-4)}.pdf`,
+      type: 'policy',
+      status: 'learning',
+      size: '3.5 MB',
+      date: 'Vừa tải lên'
+    })
+
+    // Simulate AI Learning
+    setTimeout(() => {
+      updateKnowledgeFileStatus(newId, 'learned')
+    }, 3000)
+  }
 
   return (
     <div className="flex flex-col gap-6 h-[calc(100vh-6rem)]">
@@ -35,7 +119,7 @@ export default function AIKnowledgePage() {
           </h1>
           <p className="text-muted-foreground mt-1">Chatbot nội bộ tự động đọc và trả lời câu hỏi dựa trên tài liệu dự án của công ty.</p>
         </div>
-        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">
+        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={handleUploadFile}>
            <UploadCloud className="h-4 w-4 mr-2" /> Tải Lên Tài Liệu
         </Button>
       </div>
@@ -48,7 +132,7 @@ export default function AIKnowledgePage() {
              <CardHeader className="pb-3 border-b shrink-0 bg-slate-50/50">
                <CardTitle className="text-lg flex justify-between items-center">
                  <span>Nguồn Dữ Liệu (Knowledge Base)</span>
-                 <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">6 Tài Liệu</Badge>
+                 <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">{knowledgeFiles.length} Tài Liệu</Badge>
                </CardTitle>
                <div className="relative mt-2">
                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -58,10 +142,10 @@ export default function AIKnowledgePage() {
              
              <CardContent className="p-0 overflow-y-auto flex-1">
                 <div className="divide-y">
-                   {KNOWLEDGE_FILES.map(file => (
+                   {knowledgeFiles.map(file => (
                      <div key={file.id} className="p-4 hover:bg-slate-50 transition-colors flex items-start gap-4">
                         <div className="h-10 w-10 bg-white rounded-lg border shadow-sm flex items-center justify-center shrink-0">
-                          {file.icon}
+                          {getFileIcon(file.type)}
                         </div>
                         <div className="flex-1 min-w-0">
                           <h4 className="font-bold text-sm text-slate-800 truncate mb-1" title={file.name}>{file.name}</h4>
@@ -78,6 +162,11 @@ export default function AIKnowledgePage() {
                         </div>
                      </div>
                    ))}
+                   {knowledgeFiles.length === 0 && (
+                     <div className="p-8 text-center text-slate-500 text-sm">
+                       Chưa có tài liệu nào.
+                     </div>
+                   )}
                 </div>
              </CardContent>
              
@@ -101,7 +190,7 @@ export default function AIKnowledgePage() {
                        <h2 className="font-bold text-lg leading-tight">NovaCopilot</h2>
                        <p className="text-xs text-indigo-200 flex items-center gap-1">
                           <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
-                          Đang trực tuyến (Đã nạp 6 tài liệu)
+                          Đang trực tuyến (Đã nạp {knowledgeFiles.filter(f => f.status === 'learned').length} tài liệu)
                        </p>
                     </div>
                  </div>
@@ -118,57 +207,58 @@ export default function AIKnowledgePage() {
                     <Badge variant="outline" className="bg-white text-slate-500 border-slate-200 px-4 py-1 text-xs">Hôm nay</Badge>
                  </div>
 
-                 {/* User Message */}
-                 <div className="flex gap-4 flex-row-reverse">
-                    <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
-                       <User className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <div className="bg-blue-600 text-white p-4 rounded-2xl rounded-tr-sm max-w-[80%] shadow-sm text-sm leading-relaxed">
-                       Khách hàng mua căn 3PN Aqua City, nếu thanh toán nhanh 95% trong đợt này thì được chiết khấu tổng cộng bao nhiêu trợ lý ơi?
-                    </div>
-                 </div>
-
-                 {/* AI Message */}
-                 <div className="flex gap-4">
-                    <div className="h-8 w-8 bg-indigo-600 rounded-full flex items-center justify-center shrink-0 shadow-sm mt-1">
-                       <Bot className="h-5 w-5 text-white" />
-                    </div>
-                    <div className="flex flex-col gap-2 max-w-[85%]">
-                       <div className="bg-white border border-slate-200 p-5 rounded-2xl rounded-tl-sm shadow-sm text-sm leading-relaxed text-slate-700">
-                          <p className="mb-3">Chào bạn, dựa trên các tài liệu hiện hành, đối với căn hộ 3 Phòng ngủ tại Aqua City khi khách hàng chọn phương thức thanh toán nhanh 95%, mức chiết khấu được áp dụng như sau:</p>
-                          <ul className="list-disc pl-5 space-y-2 mb-4 font-medium text-slate-800">
-                             <li>Chiết khấu thanh toán nhanh 95%: <span className="text-green-600 font-bold">12%</span> trực tiếp vào giá bán.</li>
-                             <li>Ưu đãi Booking sớm (Trong tháng 7): <span className="text-green-600 font-bold">2%</span></li>
-                             <li>Gói quà tặng nội thất (Quy đổi): Trừ <span className="text-green-600 font-bold">300 triệu VNĐ</span>.</li>
-                          </ul>
-                          <p><strong>Tổng cộng:</strong> Khách hàng sẽ được chiết khấu <strong className="text-indigo-600">14%</strong> tổng giá trị căn hộ và trừ thêm <strong className="text-indigo-600">300 triệu VNĐ</strong>.</p>
+                 {aiChatHistory.map(msg => (
+                   <div key={msg.id}>
+                     {msg.role === 'user' ? (
+                       <div className="flex gap-4 flex-row-reverse">
+                          <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
+                             <User className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <div className="bg-blue-600 text-white p-4 rounded-2xl rounded-tr-sm max-w-[80%] shadow-sm text-sm leading-relaxed">
+                             {msg.content}
+                          </div>
                        </div>
-                       
-                       {/* Citations (Trích dẫn nguồn) */}
-                       <div className="flex flex-wrap gap-2 mt-1">
-                          <div className="text-xs font-medium text-slate-500 mr-1 flex items-center">Nguồn:</div>
-                          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100 cursor-pointer flex items-center gap-1">
-                             <FileText className="h-3 w-3" /> Chinh_Sach_Ban_Hang_Aqua_T7.pdf (Trang 12)
-                          </Badge>
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 cursor-pointer flex items-center gap-1">
-                             <FileText className="h-3 w-3" /> FAQ_Cau_Hoi_Thuong_Gap.docx
-                          </Badge>
+                     ) : (
+                       <div className="flex gap-4 mt-6">
+                          <div className="h-8 w-8 bg-indigo-600 rounded-full flex items-center justify-center shrink-0 shadow-sm mt-1">
+                             <Bot className="h-5 w-5 text-white" />
+                          </div>
+                          <div className="flex flex-col gap-2 max-w-[85%]">
+                             <div className="bg-white border border-slate-200 p-5 rounded-2xl rounded-tl-sm shadow-sm text-sm leading-relaxed text-slate-700">
+                                {renderMessageContent(msg.content)}
+                             </div>
+                             
+                             {/* Citations (Trích dẫn nguồn) */}
+                             {msg.citations && msg.citations.length > 0 && (
+                               <div className="flex flex-wrap gap-2 mt-1">
+                                  <div className="text-xs font-medium text-slate-500 mr-1 flex items-center">Nguồn:</div>
+                                  {msg.citations.map((cite, idx) => (
+                                    <Badge key={idx} variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 cursor-pointer flex items-center gap-1">
+                                       <FileText className="h-3 w-3" /> {cite}
+                                    </Badge>
+                                  ))}
+                               </div>
+                             )}
+                          </div>
                        </div>
-                    </div>
-                 </div>
+                     )}
+                   </div>
+                 ))}
 
-                 {/* AI Typing Indicator (Mock) */}
-                 <div className="flex gap-4 opacity-50">
-                    <div className="h-8 w-8 bg-indigo-600 rounded-full flex items-center justify-center shrink-0">
-                       <Bot className="h-5 w-5 text-white" />
-                    </div>
-                    <div className="bg-white border border-slate-200 px-4 py-3 rounded-2xl rounded-tl-sm shadow-sm flex items-center gap-1">
-                       <div className="h-2 w-2 bg-slate-400 rounded-full animate-bounce"></div>
-                       <div className="h-2 w-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                       <div className="h-2 w-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
-                    </div>
-                 </div>
-
+                 {/* AI Typing Indicator */}
+                 {isTyping && (
+                   <div className="flex gap-4 opacity-50 mt-6">
+                      <div className="h-8 w-8 bg-indigo-600 rounded-full flex items-center justify-center shrink-0">
+                         <Bot className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="bg-white border border-slate-200 px-4 py-3 rounded-2xl rounded-tl-sm shadow-sm flex items-center gap-1">
+                         <div className="h-2 w-2 bg-slate-400 rounded-full animate-bounce"></div>
+                         <div className="h-2 w-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                         <div className="h-2 w-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
+                      </div>
+                   </div>
+                 )}
+                 <div ref={chatEndRef} />
               </div>
 
               {/* Chat Input Area */}
@@ -183,18 +273,22 @@ export default function AIKnowledgePage() {
                         className="pl-4 pr-12 py-6 bg-slate-50 border-slate-300 focus-visible:ring-indigo-500 rounded-xl w-full"
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        disabled={isTyping}
                       />
                       <Button 
                         size="icon" 
-                        className={`absolute right-1.5 top-1.5 h-9 w-9 rounded-lg ${inputText.length > 0 ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-slate-200 text-slate-400'}`}
+                        className={`absolute right-1.5 top-1.5 h-9 w-9 rounded-lg ${inputText.length > 0 && !isTyping ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                        onClick={handleSendMessage}
+                        disabled={isTyping || inputText.length === 0}
                       >
                         <Send className="h-4 w-4 ml-0.5" />
                       </Button>
                     </div>
                  </div>
                  <div className="flex justify-center mt-2 gap-4 text-[11px] text-slate-400">
-                    <span>💡 Gợi ý: "Pháp lý dự án Aqua đến đâu rồi?"</span>
-                    <span>"Bảng giá các căn đang mở bán?"</span>
+                    <span className="cursor-pointer hover:text-indigo-500" onClick={() => setInputText('Pháp lý dự án Aqua đến đâu rồi?')}>💡 Gợi ý: "Pháp lý dự án Aqua đến đâu rồi?"</span>
+                    <span className="cursor-pointer hover:text-indigo-500" onClick={() => setInputText('Bảng giá các căn đang mở bán?')}>"Bảng giá các căn đang mở bán?"</span>
                  </div>
               </div>
 

@@ -1,20 +1,14 @@
 "use client"
 import React, { Suspense, useState, useEffect } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { OrbitControls, Html, useTexture, Sphere } from '@react-three/drei'
-import { VRButton, XR } from '@react-three/xr'
+import { OrbitControls, Html, Sphere, Environment } from '@react-three/drei'
+import { createXRStore, XR } from '@react-three/xr'
 import * as THREE from 'three'
-import { Maximize, Ruler, Volume2, VolumeX, X, Play } from 'lucide-react'
+import { Maximize, Ruler, Volume2, VolumeX, X, Play, Glasses } from 'lucide-react'
 
-// Texture wrapper
-function PanoramaSphere({ url }: { url: string }) {
-  const texture = useTexture(url)
-  return (
-    <Sphere args={[500, 60, 40]} scale={[-1, 1, 1]}>
-      <meshBasicMaterial map={texture} side={THREE.BackSide} />
-    </Sphere>
-  )
-}
+const store = createXRStore()
+
+// Removed PanoramaSphere to use Environment preset from drei
 
 function Hotspot({ position, label, onClick }: any) {
   return (
@@ -73,8 +67,13 @@ export function PanoramaViewer() {
 
   return (
     <div className="w-full h-screen relative bg-black">
-      {/* @ts-ignore - store is required in newer xr versions but this is a mock UI */}
-      <VRButton className="absolute bottom-6 right-6 z-50 bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-lg text-white hover:bg-white/20 font-medium" />
+      {/* Custom VR Button */}
+      <button 
+        onClick={() => store.enterVR()}
+        className="absolute bottom-6 right-6 z-50 bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-lg text-white hover:bg-white/20 font-medium flex items-center gap-2"
+      >
+        <Glasses size={18} /> Enter VR
+      </button>
       
       {/* UI Overlay Tools */}
       <div className="absolute top-20 right-6 z-50 flex flex-col gap-3">
@@ -121,11 +120,10 @@ export function PanoramaViewer() {
       )}
 
       <Canvas camera={{ position: [0, 0, 0.1], fov: 75 }}>
-        {/* @ts-ignore - store required in new xr versions but using mock */}
-        <XR>
+        <XR store={store}>
           <Suspense fallback={<Html center><div className="text-white font-bold text-xl animate-pulse">Đang tải môi trường 360°...</div></Html>}>
-            {/* Equirectangular Panorama */}
-            <PanoramaSphere url="https://upload.wikimedia.org/wikipedia/commons/4/4c/Equirectangular_panorama_of_a_park_in_Stockholm.jpg" />
+            {/* Using Environment from drei for reliable cross-origin HDRI background */}
+            <Environment preset="city" background />
             
             {/* 3D Hotspots */}
             <Hotspot 
