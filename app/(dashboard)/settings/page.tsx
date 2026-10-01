@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
 
 import { 
   Settings, Shield, Users, Building2, History, Webhook, DatabaseBackup, Save, 
@@ -46,9 +47,26 @@ const AUDIT_LOGS = [
 
 export default function SystemSettingsPage() {
   const [activeTab, setActiveTab] = useState('rbac')
+  const [permissions, setPermissions] = useState(RBAC_PERMISSIONS)
+  const [toastMsg, setToastMsg] = useState<string | null>(null)
+
+  const togglePermission = (id: number, role: 'admin' | 'manager' | 'agent' | 'external') => {
+    setPermissions(prev => prev.map(p => p.id === id ? { ...p, [role]: !p[role] } : p))
+  }
+
+  const handleSave = () => {
+    setToastMsg("Đã lưu thiết lập hệ thống & ma trận phân quyền RBAC thành công!")
+    setTimeout(() => setToastMsg(null), 3000)
+  }
 
   return (
     <div className="flex flex-col gap-6">
+      {toastMsg && (
+        <div className="fixed top-20 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 border border-slate-700 animate-in fade-in slide-in-from-top-4">
+          <CheckCircle className="h-5 w-5 text-green-400" />
+          <span className="text-sm font-medium">{toastMsg}</span>
+        </div>
+      )}
       
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900 p-4 md:p-6 rounded-2xl shadow-xl border border-slate-800 text-white relative overflow-hidden">
@@ -63,10 +81,10 @@ export default function SystemSettingsPage() {
           <p className="text-slate-400 mt-1">Bảng điều khiển tối cao dành cho Super Admin quản trị nền tảng Enterprise.</p>
         </div>
         <div className="flex gap-2 relative z-10">
-          <Button variant="outline" className="border-slate-700 bg-slate-800/50 hover:bg-slate-800 text-white">
+          <Button variant="outline" className="border-slate-700 bg-slate-800/50 hover:bg-slate-800 text-white" onClick={() => setToastMsg("Hệ thống đang hoạt động bình thường, không ở chế độ bảo trì.")}>
              <MonitorStop className="h-4 w-4 mr-2" /> Bảo Trì Hệ Thống
           </Button>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold">
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold" onClick={handleSave}>
              <Save className="h-4 w-4 mr-2" /> Lưu Cấu Hình
           </Button>
         </div>
@@ -114,15 +132,15 @@ export default function SystemSettingsPage() {
                            </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                           {RBAC_PERMISSIONS.map(row => (
-                              <tr key={row.id} className="hover:bg-slate-50 transition-colors">
-                                 <td className="p-4 text-slate-700 font-medium">{row.name}</td>
-                                 <td className="p-4 text-center"><Checkbox checked={row.admin} /></td>
-                                 <td className="p-4 text-center"><Checkbox checked={row.manager} /></td>
-                                 <td className="p-4 text-center"><Checkbox checked={row.agent} /></td>
-                                 <td className="p-4 text-center"><Checkbox checked={row.external} /></td>
-                              </tr>
-                           ))}
+                           {permissions.map(row => (
+                               <tr key={row.id} className="hover:bg-slate-50 transition-colors">
+                                  <td className="p-4 text-slate-700 font-medium">{row.name}</td>
+                                  <td className="p-4 text-center"><div className="flex justify-center"><Checkbox checked={row.admin} onCheckedChange={() => togglePermission(row.id, 'admin')} /></div></td>
+                                  <td className="p-4 text-center"><div className="flex justify-center"><Checkbox checked={row.manager} onCheckedChange={() => togglePermission(row.id, 'manager')} /></div></td>
+                                  <td className="p-4 text-center"><div className="flex justify-center"><Checkbox checked={row.agent} onCheckedChange={() => togglePermission(row.id, 'agent')} /></div></td>
+                                  <td className="p-4 text-center"><div className="flex justify-center"><Checkbox checked={row.external} onCheckedChange={() => togglePermission(row.id, 'external')} /></div></td>
+                               </tr>
+                            ))}
                         </tbody>
                      </table>
                   </CardContent>
@@ -360,16 +378,4 @@ export default function SystemSettingsPage() {
       </div>
     </div>
   )
-}
-
-// UI Checkbox component
-function Checkbox({ checked }: { checked: boolean }) {
-   if (checked) {
-      return (
-         <div className="inline-flex h-5 w-5 items-center justify-center rounded bg-blue-600 text-white shadow">
-            <Check className="h-3.5 w-3.5" />
-         </div>
-      )
-   }
-   return <div className="inline-block h-5 w-5 rounded border border-slate-300 bg-slate-50"></div>
 }

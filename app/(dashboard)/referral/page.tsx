@@ -33,15 +33,29 @@ const PERFORMANCE_DATA = [
 
 export default function ReferralPage() {
   const [copied, setCopied] = useState(false)
+  const [toastMsg, setToastMsg] = useState<string | null>(null)
   const affiliateLink = "https://crm.novaland.com/ref/TUANTU99"
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg)
+    setTimeout(() => setToastMsg(null), 3000)
+  }
 
   const handleCopy = () => {
     setCopied(true)
+    showToast("Đã sao chép link giới thiệu vào clipboard!")
     setTimeout(() => setCopied(false), 2000)
   }
 
   return (
     <div className="flex flex-col gap-6">
+      {toastMsg && (
+        <div className="fixed top-20 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 border border-slate-700 animate-in fade-in slide-in-from-top-4">
+          <CheckCircle className="h-5 w-5 text-green-400" />
+          <span className="text-sm font-medium">{toastMsg}</span>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
@@ -50,7 +64,7 @@ export default function ReferralPage() {
           </h1>
           <p className="text-muted-foreground mt-1">Hệ thống Affiliate, theo dõi khách hàng và nhận thưởng không giới hạn.</p>
         </div>
-        <Button className="bg-fuchsia-500 hover:bg-fuchsia-600 text-white">
+        <Button className="bg-fuchsia-500 hover:bg-fuchsia-600 text-white" onClick={() => showToast("Đã gửi lời mời tham gia qua Zalo & Email!")}>
            <Share2 className="h-4 w-4 mr-2" /> Mời Bạn Bè Tham Gia
         </Button>
       </div>
@@ -85,8 +99,12 @@ export default function ReferralPage() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <Button variant="outline" className="flex-1 border-slate-300"><QrCode className="h-4 w-4 mr-2" /> Tải Mã QR</Button>
-                  <Button variant="outline" className="flex-1 border-slate-300"><Share2 className="h-4 w-4 mr-2" /> Share Zalo</Button>
+                  <Button variant="outline" className="flex-1 border-slate-300" onClick={() => showToast("Đã tải ảnh mã QR xuống thiết bị!")}>
+                    <QrCode className="h-4 w-4 mr-2" /> Tải Mã QR
+                  </Button>
+                  <Button variant="outline" className="flex-1 border-slate-300" onClick={() => showToast("Đang mở ứng dụng Zalo để chia sẻ link...")}>
+                    <Share2 className="h-4 w-4 mr-2" /> Share Zalo
+                  </Button>
                 </div>
              </CardContent>
            </Card>
@@ -127,7 +145,7 @@ export default function ReferralPage() {
                 <div className="text-sm text-fuchsia-100 mb-4">
                   Thực nhận đợt 1: <strong className="text-white">245.000.000 VNĐ</strong>
                 </div>
-                <Button className="w-full bg-white text-fuchsia-700 hover:bg-slate-100 font-bold">
+                <Button className="w-full bg-white text-fuchsia-700 hover:bg-slate-100 font-bold" onClick={() => showToast("Yêu cầu rút 245.000.000 VNĐ đã được gửi tới Kế toán duyệt!")}>
                   Yêu Cầu Rút Tiền (Withdraw)
                 </Button>
               </CardContent>
@@ -197,11 +215,53 @@ export default function ReferralPage() {
              </CardContent>
            </Card>
 
+           {/* Biểu đồ Hiệu suất Click & Deal */}
+           <Card className="shadow-sm">
+             <CardHeader className="pb-2 flex flex-row items-center justify-between">
+               <div>
+                 <CardTitle className="text-lg">Tăng Trưởng Lượt Click & Giao Dịch Chốt</CardTitle>
+                 <CardDescription>Thống kê lượt nhấn link CTV và số deal chốt thành công qua 4 tuần gần nhất</CardDescription>
+               </div>
+               <Badge className="bg-fuchsia-100 text-fuchsia-700 border-none">Tháng 7/2026</Badge>
+             </CardHeader>
+             <CardContent className="pt-2">
+               <div className="h-60 w-full">
+                 <ResponsiveContainer width="100%" height="100%">
+                   <AreaChart data={PERFORMANCE_DATA} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
+                     <defs>
+                       <linearGradient id="clickGradient" x1="0" y1="0" x2="0" y2="1">
+                         <stop offset="5%" stopColor="#d946ef" stopOpacity={0.4}/>
+                         <stop offset="95%" stopColor="#d946ef" stopOpacity={0}/>
+                       </linearGradient>
+                       <linearGradient id="dealGradient" x1="0" y1="0" x2="0" y2="1">
+                         <stop offset="5%" stopColor="#22c55e" stopOpacity={0.5}/>
+                         <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
+                       </linearGradient>
+                     </defs>
+                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                     <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} />
+                     <YAxis yAxisId="left" stroke="#d946ef" fontSize={12} tickLine={false} />
+                     <YAxis yAxisId="right" orientation="right" stroke="#22c55e" fontSize={12} tickLine={false} />
+                     <Tooltip 
+                       formatter={(value: any, name: any) => [
+                         value, 
+                         name === 'click' ? 'Lượt Click Link' : 'Giao Dịch Thành Công'
+                       ]}
+                       contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none' }}
+                     />
+                     <Area yAxisId="left" type="monotone" dataKey="click" stroke="#d946ef" strokeWidth={2} fillOpacity={1} fill="url(#clickGradient)" />
+                     <Area yAxisId="right" type="monotone" dataKey="deal" stroke="#22c55e" strokeWidth={2} fillOpacity={1} fill="url(#dealGradient)" />
+                   </AreaChart>
+                 </ResponsiveContainer>
+               </div>
+             </CardContent>
+           </Card>
+
            {/* Referrals List Table */}
            <Card className="shadow-sm flex-1">
              <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
                <CardTitle className="text-lg">Danh Sách Khách Hàng Được Giới Thiệu</CardTitle>
-               <Button variant="outline" size="sm">Xuất Excel</Button>
+               <Button variant="outline" size="sm" onClick={() => showToast("Đã xuất danh sách CTV ra file Excel!")}>Xuất Excel</Button>
              </CardHeader>
              <CardContent className="p-0">
                <div className="overflow-x-auto pb-4">

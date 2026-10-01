@@ -56,6 +56,30 @@ export interface InventoryItem {
   floor?: number;
   tower?: string;
   handoverStandard?: 'Thô' | 'Hoàn thiện cơ bản' | 'Full nội thất';
+  balconyDirection?: string;
+  discountPolicy?: string;
+  holdingAgent?: string;
+  bookingExpiresAt?: string;
+}
+
+export interface ContractPaymentSchedule {
+  installment: number;
+  milestone: string;
+  percentage: number;
+  amount: number;
+  dueDate: string;
+  status: 'Đã thu' | 'Đến hạn' | 'Chưa đến hạn' | 'Quá hạn';
+  paidDate?: string;
+  invoiceRef?: string;
+}
+
+export interface ContractAttachment {
+  id: string;
+  name: string;
+  size: string;
+  date: string;
+  type: 'pdf' | 'jpg' | 'doc';
+  category: 'Hợp đồng gốc' | 'CCCD' | 'UNC' | 'Biên bản bàn giao';
 }
 
 export interface Contract {
@@ -71,6 +95,49 @@ export interface Contract {
   paymentProgress?: number; // 0 to 100
   bankSupport?: string; // Tên ngân hàng nếu có vay
   signer?: string;
+  loanAmount?: number;
+  loanTermYears?: number;
+  interestSupportMonths?: number;
+  witnessAgent?: string;
+  notaryOffice?: string;
+  notaryDate?: string;
+  paymentSchedule?: ContractPaymentSchedule[];
+  attachments?: ContractAttachment[];
+}
+
+export interface BookingTicket {
+  id: string; // e.g. BK-1001
+  code: string; // e.g. BK-1001
+  customerId: string;
+  customerName: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  projectId: string;
+  projectName: string;
+  unitId: string;
+  unitCode: string;
+  price: number;
+  depositAmount: number;
+  status: 'sale' | 'manager' | 'director' | 'payment' | 'done' | 'rejected';
+  type: 'Giữ chỗ có hoàn lại' | 'Giữ chỗ không hoàn lại' | 'Ký HĐ Cọc';
+  priority: 'normal' | 'high' | 'urgent';
+  paymentMethod: 'Chuyển khoản' | 'Tiền mặt' | 'Thẻ tín dụng' | 'Ví điện tử';
+  docs: string; // e.g. '3/4'
+  agent: string;
+  time: string;
+  createdAt: string;
+  expiresAt: string;
+  remainingMinutes?: number;
+  notes?: string;
+  paymentProofUrl?: string;
+  bankRef?: string;
+  approvalHistory?: {
+    step: string;
+    actor: string;
+    action: 'created' | 'approved' | 'rejected' | 'extended';
+    timestamp: string;
+    comment?: string;
+  }[];
 }
 
 export interface AppDatabase {
@@ -78,6 +145,7 @@ export interface AppDatabase {
   projects: Project[];
   inventory: InventoryItem[];
   contracts: Contract[];
+  bookingTickets?: BookingTicket[];
   campaigns: Campaign[];
   articles: Article[];
   landingPages: LandingPage[];

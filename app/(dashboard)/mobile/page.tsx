@@ -304,8 +304,7 @@ export default function MobileHubPage() {
                         <CardTitle className="flex items-center gap-2 text-fuchsia-900"><WifiOff className="h-5 w-5 text-fuchsia-600" /> Giả Lập Mất Mạng (Offline-First)</CardTitle>
                         <CardDescription className="mt-1">Tắt kết nối để xem dữ liệu được lưu tạm Queue.</CardDescription>
                      </div>
-                     {/* @ts-ignore */}
-                     <div 
+                                          <div 
                         className={`w-12 h-6 rounded-full flex items-center p-1 cursor-pointer transition-colors ${isOffline ? 'bg-red-500 justify-end' : 'bg-green-500 justify-start'}`}
                         onClick={() => toggleNetwork(!isOffline)}
                      >

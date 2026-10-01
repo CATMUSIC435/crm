@@ -1,5 +1,11 @@
+"use client"
+import React, { use, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
@@ -14,10 +20,53 @@ import {
 import { Timeline } from "@/components/ui/timeline"
 import { AIAssistantDialog } from "@/components/ui/ai-assistant-dialog"
 import { Progress } from "@/components/ui/progress"
+import { useStore } from "@/store/useStore"
 
-export default async function Customer360Page({ params }: { params: Promise<{ id: string }> }) {
-  // Mock fetching data based on params.id
-  const { id } = await params
+export default function Customer360Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
+  const { customers, contracts, inventory, projects, updateCustomer, makeCall } = useStore()
+  
+  // Resolve customer by ID or fallback to first
+  const customer = customers.find(c => c.id === id) || customers[0]
+  const customerContracts = contracts.filter(c => c.customerId === customer?.id)
+  const customerInventory = inventory.filter(i => i.customerId === customer?.id)
+
+  const [toastMsg, setToastMsg] = useState<string | null>(null)
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [editForm, setEditForm] = useState({
+    name: customer?.name || '',
+    phone: customer?.phone || '',
+    email: customer?.email || '',
+    rank: customer?.rank || 'VIP',
+    status: customer?.status || 'Đang tư vấn',
+    assignedTo: customer?.assignedTo || 'Lê Hoàng Anh'
+  })
+
+  const handleQuickCall = () => {
+    if (!customer) return
+    makeCall(customer.phone)
+    setToastMsg(`Đang khởi tạo cuộc gọi VoIP đến ${customer.name} (${customer.phone})...`)
+    setTimeout(() => {
+      setToastMsg('Cuộc gọi đã hoàn tất và được đồng bộ vào lịch sử!')
+      setTimeout(() => setToastMsg(null), 3000)
+    }, 2000)
+  }
+
+  const handleCopyContact = () => {
+    if (!customer) return
+    navigator.clipboard.writeText(`KH: ${customer.name} - SĐT: ${customer.phone} - Email: ${customer.email}`)
+    setToastMsg('Đã sao chép thông tin liên hệ vào Clipboard!')
+    setTimeout(() => setToastMsg(null), 2500)
+  }
+
+  const handleSaveProfile = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!customer) return
+    updateCustomer(customer.id, editForm)
+    setIsEditOpen(false)
+    setToastMsg('Đã cập nhật hồ sơ khách hàng thành công!')
+    setTimeout(() => setToastMsg(null), 3000)
+  }
   
   return (
     <div className="flex flex-col gap-6">
@@ -26,15 +75,20 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
           <Avatar className="h-20 w-20 sm:h-24 sm:w-24 shrink-0 ring-4 ring-primary/10">
             <AvatarImage src={`https://i.pravatar.cc/150?u=${id}`} />
-            <AvatarFallback>NT</AvatarFallback>
+            <AvatarFallback>{customer?.name?.substring(0, 2).toUpperCase() || 'KH'}</AvatarFallback>
           </Avatar>
           <div>
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Nguyễn Văn Tuấn</h1>
-              <Badge variant="destructive" className="mt-1">Investor</Badge>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{customer?.name}</h1>
+              <Badge className={customer?.rank === 'VVIP' ? 'bg-amber-500 hover:bg-amber-600' : customer?.rank === 'VIP' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-slate-500'}>
+                {customer?.rank}
+              </Badge>
+              <Badge variant="outline" className="text-slate-600">
+                Mã: {customer?.code}
+              </Badge>
             </div>
             <p className="text-muted-foreground mt-2 flex flex-wrap items-center gap-2 text-sm sm:text-base">
-              <Briefcase className="h-4 w-4 shrink-0" /> Giám đốc tại Công ty Cổ phần Đầu tư XYZ
+              <Briefcase className="h-4 w-4 shrink-0" /> Chuyên viên phụ trách: <strong className="text-foreground">{customer?.assignedTo}</strong> • Trạng thái: <Badge variant="secondary">{customer?.status}</Badge>
             </p>
           </div>
         </div>
@@ -160,21 +214,21 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
                     <Phone className="h-5 w-5 text-primary shrink-0" />
                     <div>
                       <p className="text-xs text-muted-foreground">Điện thoại</p>
-                      <p className="font-semibold">090 123 4567</p>
+                      <p className="font-semibold">{customer?.phone}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                     <Mail className="h-5 w-5 text-primary shrink-0" />
                     <div>
                       <p className="text-xs text-muted-foreground">Email</p>
-                      <p className="font-semibold break-all">tuan.nguyen@xyz.com</p>
+                      <p className="font-semibold break-all">{customer?.email}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                     <MapPin className="h-5 w-5 text-primary shrink-0" />
                     <div>
                       <p className="text-xs text-muted-foreground">Địa chỉ</p>
-                      <p className="font-semibold">Quận 2, TP. Hồ Chí Minh</p>
+                      <p className="font-semibold">TP. Hồ Chí Minh</p>
                     </div>
                   </div>
                 </CardContent>
@@ -189,7 +243,7 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><PieChart className="h-5 w-5 text-blue-600" /> Phân Bổ Tài Sản</CardTitle>
-                <CardDescription>Cơ cấu tài sản ước tính của khách hàng (20 Tỷ VNĐ)</CardDescription>
+                <CardDescription>Cơ cấu tài sản ước tính của khách hàng ({customer?.revenue ? `${(customer.revenue / 1e9).toFixed(1)} Tỷ VNĐ` : 'Chưa ghi nhận'})</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -225,7 +279,7 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
                 <div className="flex items-center justify-between mb-4 bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
                   <div>
                     <p className="text-sm text-purple-700 dark:text-purple-300 font-medium">Hạn mức vay dự kiến</p>
-                    <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">5.0 - 7.0 Tỷ</p>
+                    <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">5.0 - 15.0 Tỷ</p>
                   </div>
                   <Badge className="bg-green-500">Điểm CIC: Hạng A</Badge>
                 </div>
@@ -251,6 +305,49 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
                     <p className="font-medium text-sm text-muted-foreground">Phê duyệt giải ngân</p>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Danh Sách Hợp Đồng Của Khách Hàng */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileSignature className="h-5 w-5 text-indigo-600" /> Hợp Đồng & BĐS Sở Hữu
+                </CardTitle>
+                <CardDescription>Các giao dịch và tài sản của khách hàng tại các dự án NovaCRM</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {customerContracts.length > 0 ? (
+                  <div className="divide-y border rounded-lg overflow-hidden">
+                    {customerContracts.map((c) => {
+                      const project = projects.find(p => p.id === c.projectId)
+                      const unit = inventory.find(i => i.id === c.inventoryId)
+                      return (
+                        <div key={c.id} className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 hover:bg-muted/50">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-base">{c.code}</span>
+                              <Badge variant="outline">{c.type || 'HĐ Mua Bán'}</Badge>
+                              <Badge className={c.status === 'Đã ký' ? 'bg-green-500 hover:bg-green-600' : 'bg-amber-500 hover:bg-amber-600'}>{c.status}</Badge>
+                            </div>
+                            <div className="text-sm text-muted-foreground mt-1">
+                              Dự án: <strong className="text-foreground">{project?.name || 'Dự án'}</strong> • Mã căn: <strong className="text-foreground">{unit?.code || c.inventoryId}</strong> ({unit?.type || 'Căn hộ'})
+                            </div>
+                          </div>
+                          <div className="text-left sm:text-right">
+                            <div className="text-lg font-bold text-indigo-600">{(c.value / 1e9).toFixed(1)} Tỷ VNĐ</div>
+                            <div className="text-xs text-muted-foreground">Tiến độ thanh toán: {c.paymentProgress || 0}%</div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <Home className="h-10 w-10 mx-auto mb-2 text-slate-300" />
+                    <p>Khách hàng đang trong giai đoạn tư vấn, chưa phát sinh hợp đồng.</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -380,7 +477,7 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-4">
                     <div>
                       <p className="text-sm text-muted-foreground mb-1">Họ và Tên</p>
-                      <p className="font-medium text-base uppercase">Nguyễn Văn Tuấn</p>
+                      <p className="font-medium text-base uppercase">{customer?.name}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground mb-1">Số CCCD / CMND</p>
@@ -538,6 +635,93 @@ export default async function Customer360Page({ params }: { params: Promise<{ id
       </Tabs>
 
       <AIAssistantDialog />
+      {/* Toast Feedback */}
+      {toastMsg && (
+        <div className="fixed top-20 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 border border-slate-700 animate-in fade-in slide-in-from-top-4">
+          <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
+          <span className="text-sm font-medium">{toastMsg}</span>
+        </div>
+      )}
+
+      {/* Edit Profile Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="sm:max-w-[480px]">
+          <form onSubmit={handleSaveProfile}>
+            <DialogHeader>
+              <DialogTitle className="font-bold text-slate-900">Chỉnh Sửa Hồ Sơ Khách Hàng</DialogTitle>
+              <DialogDescription>Cập nhật thông tin liên hệ, phân loại và trạng thái chăm sóc.</DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3 py-3 text-sm">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Số điện thoại</label>
+                <Input 
+                  value={editForm.phone} 
+                  onChange={e => setEditForm({ ...editForm, phone: e.target.value })} 
+                  required 
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Email</label>
+                <Input 
+                  type="email" 
+                  value={editForm.email} 
+                  onChange={e => setEditForm({ ...editForm, email: e.target.value })} 
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Phân hạng VIP</label>
+                  <Select value={editForm.rank} onValueChange={(val) => setEditForm({ ...editForm, rank: (val as any) || 'VIP' })}>
+                    <SelectTrigger><SelectValue placeholder="Phân hạng" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="VVIP">VVIP Kim Cương</SelectItem>
+                      <SelectItem value="VIP">VIP Bạch Kim</SelectItem>
+                      <SelectItem value="Tiềm Năng">Tiềm Năng</SelectItem>
+                      <SelectItem value="Mới">Khách Mới</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Trạng thái chăm sóc</label>
+                  <Select value={editForm.status} onValueChange={(val) => setEditForm({ ...editForm, status: (val as any) || 'Đang tư vấn' })}>
+                    <SelectTrigger><SelectValue placeholder="Trạng thái" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Đang tư vấn">Đang tư vấn</SelectItem>
+                      <SelectItem value="Đang chăm sóc">Đang chăm sóc</SelectItem>
+                      <SelectItem value="Đã giao dịch">Đã giao dịch</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Chuyên viên phụ trách</label>
+                <Select value={editForm.assignedTo} onValueChange={(val) => setEditForm({ ...editForm, assignedTo: val || 'Lê Hoàng Anh' })}>
+                  <SelectTrigger><SelectValue placeholder="Chuyên viên" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Lê Hoàng Anh">Lê Hoàng Anh</SelectItem>
+                    <SelectItem value="Thanh Hà">Thanh Hà</SelectItem>
+                    <SelectItem value="Tuấn Tú">Tuấn Tú</SelectItem>
+                    <SelectItem value="Minh Anh">Minh Anh</SelectItem>
+                    <SelectItem value="Nguyễn Mai">Nguyễn Mai</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button type="button" variant="ghost" onClick={() => setIsEditOpen(false)}>Hủy</Button>
+              <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold">
+                Lưu Thay Đổi
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -32,8 +32,19 @@ export default function CMSPage() {
   const [titleCheck, setTitleCheck] = useState(true)
   const [excerptCheck, setExcerptCheck] = useState(true)
   
-  // Banner Preview Modal
+  // Search & Banner States
+  const [articleSearch, setArticleSearch] = useState('')
+  const [bannersList, setBannersList] = useState(BANNERS)
   const [previewBanner, setPreviewBanner] = useState<string | null>(null)
+
+  const filteredArticles = articles.filter(a => 
+    a.title.toLowerCase().includes(articleSearch.toLowerCase().trim()) ||
+    a.category.toLowerCase().includes(articleSearch.toLowerCase().trim())
+  )
+
+  const toggleBannerStatus = (id: number) => {
+    setBannersList(prev => prev.map(b => b.id === id ? { ...b, status: !b.status } : b))
+  }
 
   useEffect(() => {
     // Calculate SEO Score dynamically
@@ -102,37 +113,48 @@ export default function CMSPage() {
                        <CardTitle className="text-lg">Kho Bài Viết (Tin tức / Blog)</CardTitle>
                        <div className="relative w-full md:w-72">
                          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                         <Input placeholder="Tìm kiếm tựa đề bài viết..." className="pl-9 bg-white border-slate-200" />
+                         <Input 
+                           placeholder="Tìm kiếm tựa đề bài viết..." 
+                           className="pl-9 bg-white border-slate-200" 
+                           value={articleSearch}
+                           onChange={e => setArticleSearch(e.target.value)}
+                         />
                        </div>
                     </CardHeader>
                     <CardContent className="p-0">
                        <div className="divide-y divide-slate-100">
-                          {articles.map(post => (
-                             <div key={post.id} className="p-4 md:p-5 hover:bg-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
-                                <div className="flex-1">
-                                   <div className="flex items-center gap-3 mb-2">
-                                      <h4 className="font-bold text-slate-800 text-lg hover:text-teal-600 cursor-pointer">{post.title}</h4>
-                                      {post.status === 'published' 
-                                        ? <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none">Đã xuất bản</Badge>
-                                        : <Badge variant="outline" className="text-slate-500 bg-white">Bản nháp</Badge>
-                                      }
-                                   </div>
-                                   <p className="text-sm text-slate-500 mb-2 line-clamp-1">{post.excerpt}</p>
-                                   <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 font-medium">
-                                      <span className="bg-slate-100 px-2 py-1 rounded">Chuyên mục: {post.category}</span>
-                                      <span className="flex items-center gap-1"><Eye className="h-4 w-4 text-blue-500" /> {post.views.toLocaleString()} lượt xem</span>
-                                      <span className="flex items-center gap-1">
-                                        <Target className="h-4 w-4 text-teal-500" /> SEO Score: 
-                                        <strong className={post.seoScore >= 80 ? 'text-green-600' : 'text-amber-600'}>{post.seoScore}/100</strong>
-                                      </span>
-                                   </div>
-                                </div>
-                                <div className="flex gap-2 shrink-0">
-                                   <Button variant="outline" size="sm" className="text-slate-600 hover:text-blue-600"><Edit className="h-4 w-4 mr-2"/> Sửa</Button>
-                                   <Button variant="outline" size="icon" className="text-slate-400 hover:text-red-600 hover:bg-red-50"><Trash2 className="h-4 w-4"/></Button>
-                                </div>
-                             </div>
-                          ))}
+                          {filteredArticles.length === 0 ? (
+                            <div className="p-8 text-center text-slate-400">
+                              Không tìm thấy bài viết nào phù hợp với &ldquo;{articleSearch}&rdquo;.
+                            </div>
+                          ) : (
+                            filteredArticles.map(post => (
+                              <div key={post.id} className="p-4 md:p-5 hover:bg-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
+                                 <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-2">
+                                       <h4 className="font-bold text-slate-800 text-lg hover:text-teal-600 cursor-pointer">{post.title}</h4>
+                                       {post.status === 'published' 
+                                         ? <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none">Đã xuất bản</Badge>
+                                         : <Badge variant="outline" className="text-slate-500 bg-white">Bản nháp</Badge>
+                                       }
+                                    </div>
+                                    <p className="text-sm text-slate-500 mb-2 line-clamp-1">{post.excerpt}</p>
+                                    <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 font-medium">
+                                       <span className="bg-slate-100 px-2 py-1 rounded">Chuyên mục: {post.category}</span>
+                                       <span className="flex items-center gap-1"><Eye className="h-4 w-4 text-blue-500" /> {post.views.toLocaleString()} lượt xem</span>
+                                       <span className="flex items-center gap-1">
+                                         <Target className="h-4 w-4 text-teal-500" /> SEO Score: 
+                                         <strong className={post.seoScore >= 80 ? 'text-green-600' : 'text-amber-600'}>{post.seoScore}/100</strong>
+                                       </span>
+                                    </div>
+                                 </div>
+                                 <div className="flex gap-2 shrink-0">
+                                    <Button variant="outline" size="sm" className="text-slate-600 hover:text-blue-600"><Edit className="h-4 w-4 mr-2"/> Sửa</Button>
+                                    <Button variant="outline" size="icon" className="text-slate-400 hover:text-red-600 hover:bg-red-50"><Trash2 className="h-4 w-4"/></Button>
+                                 </div>
+                              </div>
+                            ))
+                          )}
                        </div>
                     </CardContent>
                  </Card>
@@ -284,7 +306,7 @@ export default function CMSPage() {
               </CardHeader>
               <CardContent className="p-0">
                  <div className="divide-y divide-slate-100">
-                    {BANNERS.map(banner => (
+                    {bannersList.map(banner => (
                        <div key={banner.id} className="p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-50 transition-colors group">
                           <div className="flex items-center gap-4">
                              <div 
@@ -309,8 +331,10 @@ export default function CMSPage() {
                                 <span className={`text-xs font-bold ${banner.status ? 'text-green-600' : 'text-slate-400'}`}>
                                   {banner.status ? 'Đang bật' : 'Đang tắt'}
                                 </span>
-                                {/* @ts-ignore */}
-                                <div className={`w-10 h-5 rounded-full flex items-center p-0.5 cursor-pointer transition-colors ${banner.status ? 'bg-green-500 justify-end' : 'bg-slate-300 justify-start'}`}>
+                                <div 
+                                  onClick={() => toggleBannerStatus(banner.id)}
+                                  className={`w-10 h-5 rounded-full flex items-center p-0.5 cursor-pointer transition-colors ${banner.status ? 'bg-green-500 justify-end' : 'bg-slate-300 justify-start'}`}
+                                >
                                    <div className="w-4 h-4 bg-white rounded-full shadow-sm"></div>
                                 </div>
                              </div>
@@ -332,16 +356,16 @@ export default function CMSPage() {
 
            {/* Banner Preview Modal */}
            <Dialog open={previewBanner !== null} onOpenChange={() => setPreviewBanner(null)}>
-             <DialogContent className="max-w-3xl overflow-hidden p-0 bg-black/95 border-slate-800">
-                <DialogHeader className="p-4 border-b border-slate-800 text-white flex flex-row items-center justify-between">
-                   <DialogTitle>Xem Trước Banner Thực Tế</DialogTitle>
-                </DialogHeader>
-                <div className="flex items-center justify-center p-4 min-h-[400px]">
-                   {previewBanner && (
-                     <img src={previewBanner} alt="Banner Preview" className="max-w-full max-h-[70vh] rounded-lg shadow-2xl object-contain border border-slate-700" />
-                   )}
-                </div>
-             </DialogContent>
+              <DialogContent className="max-w-3xl overflow-hidden p-0 bg-black/95 border-slate-800">
+                 <DialogHeader className="p-4 border-b border-slate-800 text-white flex flex-row items-center justify-between">
+                    <DialogTitle>Xem Trước Banner Thực Tế</DialogTitle>
+                 </DialogHeader>
+                 <div className="flex items-center justify-center p-4 min-h-[400px]">
+                    {previewBanner && (
+                      <img src={previewBanner} alt="Banner Preview" className="max-w-full max-h-[70vh] rounded-lg shadow-2xl object-contain border border-slate-700" />
+                    )}
+                 </div>
+              </DialogContent>
            </Dialog>
 
         </TabsContent>

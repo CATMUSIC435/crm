@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { 
-  AppDatabase, Customer, Project, InventoryItem, Contract, Campaign,
+  AppDatabase, Customer, Project, InventoryItem, Contract, BookingTicket, Campaign,
   Article, LandingPage, Review, SurveyCampaign, Voucher, LoyaltyTransaction,
   EventItem, CheckinLog, CallLog, TaskItem, DocumentFolder, DocumentFile,
   ChatChannel, ChatDM, ChatMessage, WorkflowItem, SyncTask, MobileNotification,
@@ -9,9 +9,14 @@ import {
 } from '@/types';
 // Dummy Initial Data
 const INITIAL_CUSTOMERS: Customer[] = [
-  { id: 'c1', code: 'KH-001', name: 'Nguyễn Văn A', phone: '0901234567', email: 'nguyenvana@email.com', rank: 'VVIP', revenue: 15000000000, assignedTo: 'Lê Hoàng Anh', status: 'Đã giao dịch', createdAt: '2023-01-15' },
-  { id: 'c2', code: 'KH-002', name: 'Trần Thị B', phone: '0912345678', email: 'tranthib@email.com', rank: 'VIP', revenue: 8500000000, assignedTo: 'Nguyễn Mai', status: 'Đang tư vấn', createdAt: '2023-05-20' },
-  { id: 'c3', code: 'KH-003', name: 'Lê Văn C', phone: '0987654321', email: 'levanc@email.com', rank: 'Tiềm Năng', revenue: 0, assignedTo: 'Trần Khoa', status: 'Đang chăm sóc', createdAt: '2023-11-10' }
+  { id: 'c1', code: 'KH-001', name: 'Nguyễn Văn Tuấn', phone: '0901234567', email: 'tuan.nguyen@investor.vn', rank: 'VVIP', revenue: 25000000000, assignedTo: 'Lê Hoàng Anh', status: 'Đã giao dịch', createdAt: '2023-01-15' },
+  { id: 'c2', code: 'KH-002', name: 'Trần Thị Bích Ngọc', phone: '0912345678', email: 'bichngoc.tran@vietcapital.vn', rank: 'VIP', revenue: 15000000000, assignedTo: 'Nguyễn Mai', status: 'Đang tư vấn', createdAt: '2023-05-20' },
+  { id: 'c3', code: 'KH-003', name: 'Lê Hoàng Cường', phone: '0987654321', email: 'cuong.le@techvina.com', rank: 'Tiềm Năng', revenue: 0, assignedTo: 'Trần Khoa', status: 'Đang chăm sóc', createdAt: '2023-11-10' },
+  { id: 'c4', code: 'KH-004', name: 'Phạm Minh Tuấn', phone: '0912987654', email: 'minhtuan.pham@saigonres.com', rank: 'VVIP', revenue: 35000000000, assignedTo: 'Thanh Hà', status: 'Đã giao dịch', createdAt: '2023-08-14' },
+  { id: 'c5', code: 'KH-005', name: 'Hoàng Thị Thảo', phone: '0945678123', email: 'thaonhi.hoang@gmail.com', rank: 'VIP', revenue: 8200000000, assignedTo: 'Tuấn Tú', status: 'Đang tư vấn', createdAt: '2024-01-22' },
+  { id: 'c6', code: 'KH-006', name: 'Đặng Quốc Huy', phone: '0977889900', email: 'huy.dang@greenland.vn', rank: 'Tiềm Năng', revenue: 0, assignedTo: 'Minh Anh', status: 'Đang chăm sóc', createdAt: '2024-03-05' },
+  { id: 'c7', code: 'KH-007', name: 'Vũ Thu Trang', phone: '0966554433', email: 'trang.vu@fashionvn.com', rank: 'VIP', revenue: 12000000000, assignedTo: 'Lê Hoàng Anh', status: 'Đã giao dịch', createdAt: '2024-04-18' },
+  { id: 'c8', code: 'KH-008', name: 'Ngô Đức Thắng', phone: '0933221144', email: 'thang.ngo@logistics24.vn', rank: 'Mới', revenue: 0, assignedTo: 'Thanh Hà', status: 'Đang tư vấn', createdAt: '2024-06-30' }
 ];
 
 const INITIAL_PROJECTS: Project[] = [
@@ -38,27 +43,562 @@ const INITIAL_PROJECTS: Project[] = [
         { title: "Rủi ro pháp lý", desc: "Dự án đang trong quá trình hoàn thiện các thủ tục pháp lý cuối cùng để ký HĐMB. Tuy nhiên chủ đầu tư cam kết bảo lãnh tiến độ." }
       ]
     }
-  }
+  },
+  { id: 'p4', name: 'Vinhomes Grand Park', location: 'TP. Thủ Đức, TP.HCM', totalUnits: 44000, soldUnits: 41000, status: 'Đang mở bán', type: 'Căn hộ cao cấp', revenue: 35000000000000, developer: 'Vingroup', thumbnail: 'https://images.unsplash.com/photo-1574362848149-11496d93a7c7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', launchDate: '2019-07-01', handoverDate: '2024-12-31', targetRevenue: 40000000000000, coordinates: [10.8444, 106.8375] },
+  { id: 'p5', name: 'The Global City', location: 'An Phú, TP. Thủ Đức', totalUnits: 1800, soldUnits: 1400, status: 'Đang mở bán', type: 'Nhà phố thương mại', revenue: 22000000000000, developer: 'Masterise Homes', thumbnail: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', launchDate: '2022-03-15', handoverDate: '2025-06-30', targetRevenue: 25000000000000, coordinates: [10.7938, 106.7656] }
 ];
 
 const INITIAL_INVENTORY: InventoryItem[] = [
-  // Aqua City (p1) - Tower A
-  { id: 'i1', code: 'A-01.01', projectId: 'p1', tower: 'Tòa A', floor: 1, type: 'Biệt thự biển', price: 25000000000, area: 250, status: 'Đã bán', customerId: 'c1', direction: 'Đông Nam', view: 'View Biển', bedrooms: 4, bathrooms: 4, handoverStandard: 'Full nội thất' },
-  { id: 'i2', code: 'A-01.02', projectId: 'p1', tower: 'Tòa A', floor: 1, type: 'Biệt thự biển', price: 26000000000, area: 260, status: 'Trống', direction: 'Nam', view: 'View Biển', bedrooms: 4, bathrooms: 5, handoverStandard: 'Full nội thất' },
-  { id: 'i2b', code: 'A-01.03', projectId: 'p1', tower: 'Tòa A', floor: 1, type: 'Biệt thự biển', price: 24000000000, area: 240, status: 'Booking', direction: 'Đông Bắc', view: 'Nội khu', bedrooms: 3, bathrooms: 4, handoverStandard: 'Full nội thất' },
-  { id: 'i2c', code: 'A-02.01', projectId: 'p1', tower: 'Tòa A', floor: 2, type: 'Biệt thự biển', price: 27000000000, area: 250, status: 'Trống', direction: 'Đông Nam', view: 'View Biển', bedrooms: 4, bathrooms: 4, handoverStandard: 'Full nội thất' },
-  { id: 'i2d', code: 'A-02.02', projectId: 'p1', tower: 'Tòa A', floor: 2, type: 'Biệt thự biển', price: 25500000000, area: 250, status: 'Đang khóa', direction: 'Nam', view: 'View Biển', bedrooms: 4, bathrooms: 4, handoverStandard: 'Full nội thất' },
-  // Vinhomes (p2) - The Beverly
-  { id: 'i3', code: 'BE1-05.01', projectId: 'p2', tower: 'The Beverly', floor: 5, type: 'Căn hộ 2PN', price: 5500000000, area: 75, status: 'Booking', customerId: 'c2', direction: 'Đông Tứ Trạch', view: 'Công viên 36ha', bedrooms: 2, bathrooms: 2, handoverStandard: 'Hoàn thiện cơ bản' },
-  { id: 'i3b', code: 'BE1-05.02', projectId: 'p2', tower: 'The Beverly', floor: 5, type: 'Căn hộ 3PN', price: 8200000000, area: 105, status: 'Trống', direction: 'Tây Nam', view: 'Hồ bơi nước mặn', bedrooms: 3, bathrooms: 2, handoverStandard: 'Hoàn thiện cơ bản' },
-  // Global City (p3)
-  { id: 'i4', code: 'LK-10.05', projectId: 'p3', tower: 'Khu Soho', floor: 1, type: 'Nhà phố thương mại', price: 35000000000, area: 95, status: 'Trống', direction: 'Đông Nam', view: 'Trục đường chính', bedrooms: 4, bathrooms: 5, handoverStandard: 'Thô' }
+  // NovaWorld Phan Thiet (p1)
+  { 
+    id: 'i1', code: 'NVW-01.01', projectId: 'p1', tower: 'Khu Florida', floor: 1, 
+    type: 'Biệt thự biển đơn lập', price: 25000000000, area: 250, status: 'Đã bán', 
+    customerId: 'c1', direction: 'Đông Nam', view: 'Trực diện Biển', bedrooms: 4, bathrooms: 4, 
+    handoverStandard: 'Full nội thất', balconyDirection: 'Đông Nam', discountPolicy: 'Đã áp dụng Voucher VVIP 500Tr' 
+  },
+  { 
+    id: 'i2', code: 'NVW-01.02', projectId: 'p1', tower: 'Khu Florida', floor: 1, 
+    type: 'Biệt thự biển song lập', price: 18500000000, area: 200, status: 'Trống', 
+    direction: 'Nam', view: 'View Biển & Hồ bơi', bedrooms: 3, bathrooms: 3, 
+    handoverStandard: 'Full nội thất', balconyDirection: 'Nam', discountPolicy: 'Chiết khấu 3% thanh toán sớm + Tặng 2 năm phí quản lý' 
+  },
+  { 
+    id: 'i3', code: 'NVW-02.01', projectId: 'p1', tower: 'Khu Florida', floor: 2, 
+    type: 'Shophouse biển', price: 16000000000, area: 120, status: 'Booking', 
+    customerId: 'c5', direction: 'Đông Bắc', view: 'Mặt tiền Đại Lộ', bedrooms: 3, bathrooms: 4, 
+    handoverStandard: 'Hoàn thiện cơ bản', balconyDirection: 'Đông Bắc', holdingAgent: 'Trần Thị Ánh', bookingExpiresAt: 'Hôm nay, 18:00' 
+  },
+  { 
+    id: 'i4', code: 'NVW-02.02', projectId: 'p1', tower: 'Khu Florida', floor: 2, 
+    type: 'Biệt thự đồi Golf', price: 28000000000, area: 300, status: 'Đang khóa', 
+    direction: 'Tây Nam', view: 'Sân Golf PGA', bedrooms: 5, bathrooms: 5, 
+    handoverStandard: 'Full nội thất', balconyDirection: 'Tây Nam', discountPolicy: 'Đang khóa nội bộ chờ sự kiện mở bán VIP' 
+  },
+  { 
+    id: 'i14', code: 'NVW-03.01', projectId: 'p1', tower: 'Khu Florida', floor: 3, 
+    type: 'Shophouse biển', price: 14800000000, area: 110, status: 'Trống', 
+    direction: 'Đông', view: 'Quảng trường Ánh Sáng', bedrooms: 3, bathrooms: 3, 
+    handoverStandard: 'Hoàn thiện cơ bản', balconyDirection: 'Đông', discountPolicy: 'Hỗ trợ gói hoàn thiện kinh doanh 200 Triệu' 
+  },
+  { 
+    id: 'i15', code: 'NVW-03.02', projectId: 'p1', tower: 'Khu Florida', floor: 3, 
+    type: 'Biệt thự biển song lập', price: 21000000000, area: 220, status: 'Trống', 
+    direction: 'Đông Nam', view: 'Công viên nước Bikini Beach', bedrooms: 4, bathrooms: 4, 
+    handoverStandard: 'Full nội thất', balconyDirection: 'Đông Nam', discountPolicy: 'Tặng thẻ thành viên Golf PGA 35 năm' 
+  },
+
+  // Aqua City (p2)
+  { 
+    id: 'i5', code: 'AQC-12A.01', projectId: 'p2', tower: 'The Suite', floor: 1, 
+    type: 'Nhà phố đảo Phượng Hoàng', price: 12500000000, area: 160, status: 'Đã bán', 
+    customerId: 'c7', direction: 'Đông Nam', view: 'Sông Đồng Nai', bedrooms: 4, bathrooms: 4, 
+    handoverStandard: 'Hoàn thiện cơ bản', balconyDirection: 'Đông Nam' 
+  },
+  { 
+    id: 'i6', code: 'AQC-12A.02', projectId: 'p2', tower: 'The Suite', floor: 1, 
+    type: 'Biệt thự ven sông', price: 24000000000, area: 240, status: 'Trống', 
+    direction: 'Nam', view: 'Công viên bờ sông', bedrooms: 4, bathrooms: 5, 
+    handoverStandard: 'Full nội thất', balconyDirection: 'Nam', discountPolicy: 'Chiết khấu 5% đợt 1 + Gói nội thất 300Tr' 
+  },
+  { 
+    id: 'i16', code: 'AQC-12A.03', projectId: 'p2', tower: 'The Suite', floor: 1, 
+    type: 'Nhà phố thương mại', price: 13800000000, area: 120, status: 'Trống', 
+    direction: 'Bắc', view: 'Đại lộ xuyên tâm 30m', bedrooms: 3, bathrooms: 4, 
+    handoverStandard: 'Thô', balconyDirection: 'Bắc', discountPolicy: 'Cam kết thuê lại 35 Triệu/tháng trong 2 năm' 
+  },
+  { 
+    id: 'i7', code: 'AQC-15C.03', projectId: 'p2', tower: 'River Park', floor: 2, 
+    type: 'Shophouse thương mại', price: 15000000000, area: 110, status: 'Booking', 
+    customerId: 'c2', direction: 'Bắc', view: 'Đại lộ 45m', bedrooms: 3, bathrooms: 4, 
+    handoverStandard: 'Thô', balconyDirection: 'Bắc', holdingAgent: 'Lê Hoàng Anh', bookingExpiresAt: 'Ngày mai, 12:00' 
+  },
+  { 
+    id: 'i17', code: 'AQC-15C.04', projectId: 'p2', tower: 'River Park', floor: 2, 
+    type: 'Biệt thự song lập', price: 19500000000, area: 200, status: 'Trống', 
+    direction: 'Đông Nam', view: 'Bến du thuyền Aqua Marina', bedrooms: 4, bathrooms: 4, 
+    handoverStandard: 'Hoàn thiện cơ bản', balconyDirection: 'Đông Nam', discountPolicy: 'Thanh toán 30% nhận nhà ngay' 
+  },
+  { 
+    id: 'i18', code: 'AQC-18B.01', projectId: 'p2', tower: 'The Sun Harbor', floor: 3, 
+    type: 'Dinh thự ven sông', price: 42000000000, area: 350, status: 'Đang khóa', 
+    direction: 'Đông Nam', view: 'Trực diện Bến du thuyền 5 sao', bedrooms: 5, bathrooms: 6, 
+    handoverStandard: 'Full nội thất', balconyDirection: 'Đông Nam', discountPolicy: 'Giữ căn riêng cho cổ đông chiến lược' 
+  },
+
+  // The Grand Manhattan (p3)
+  { 
+    id: 'i8', code: 'TGM-28.01', projectId: 'p3', tower: 'Tháp Manhattan', floor: 28, 
+    type: 'Căn hộ Sky Villa', price: 32000000000, area: 145, status: 'Đã bán', 
+    customerId: 'c4', direction: 'Đông Nam', view: 'Toàn cảnh Sông Sài Gòn & Bến Nhà Rồng', bedrooms: 3, bathrooms: 3, 
+    handoverStandard: 'Full nội thất', balconyDirection: 'Đông Nam' 
+  },
+  { 
+    id: 'i9', code: 'TGM-15.06', projectId: 'p3', tower: 'Tháp Manhattan', floor: 15, 
+    type: 'Căn hộ 2PN Hạng Sang', price: 14500000000, area: 78, status: 'Trống', 
+    direction: 'Tây Bắc', view: 'Trung tâm Quận 1 & Bitexco', bedrooms: 2, bathrooms: 2, 
+    handoverStandard: 'Full nội thất', balconyDirection: 'Tây Bắc', discountPolicy: 'Tặng gói Smart Home 150Tr + Chỗ đậu xe định danh' 
+  },
+  { 
+    id: 'i19', code: 'TGM-15.07', projectId: 'p3', tower: 'Tháp Manhattan', floor: 15, 
+    type: 'Căn hộ 3PN Góc', price: 21000000000, area: 112, status: 'Trống', 
+    direction: 'Đông Bắc', view: 'Công viên 23/9 & Chợ Bến Thành', bedrooms: 3, bathrooms: 3, 
+    handoverStandard: 'Full nội thất', balconyDirection: 'Đông Bắc', discountPolicy: 'Chiết khấu 8% thanh toán sớm 70%' 
+  },
+  { 
+    id: 'i20', code: 'TGM-08.02', projectId: 'p3', tower: 'Tháp Manhattan', floor: 8, 
+    type: 'Căn hộ 1PN Suite', price: 9800000000, area: 52, status: 'Booking', 
+    customerId: 'c6', direction: 'Tây Nam', view: 'Hồ bơi vô cực tầng 7', bedrooms: 1, bathrooms: 1, 
+    handoverStandard: 'Full nội thất', balconyDirection: 'Tây Nam', holdingAgent: 'Phạm Thu Hà', bookingExpiresAt: 'Hôm nay, 17:30' 
+  },
+  { 
+    id: 'i21', code: 'TGM-08.03', projectId: 'p3', tower: 'Tháp Manhattan', floor: 8, 
+    type: 'Căn hộ 2PN Executive', price: 15200000000, area: 80, status: 'Trống', 
+    direction: 'Đông', view: 'Phố đi bộ Nguyễn Huệ & Sông Sài Gòn', bedrooms: 2, bathrooms: 2, 
+    handoverStandard: 'Full nội thất', balconyDirection: 'Đông', discountPolicy: 'Hỗ trợ lãi suất 0% trong 18 tháng' 
+  },
+
+  // Vinhomes Grand Park (p4)
+  { 
+    id: 'i10', code: 'BE1-05.01', projectId: 'p4', tower: 'The Beverly', floor: 5, 
+    type: 'Căn hộ Luxury 2PN', price: 5500000000, area: 75, status: 'Đã bán', 
+    customerId: 'c2', direction: 'Đông Tứ Trạch', view: 'Công viên ánh sáng 36ha', bedrooms: 2, bathrooms: 2, 
+    handoverStandard: 'Hoàn thiện cơ bản', balconyDirection: 'Đông' 
+  },
+  { 
+    id: 'i11', code: 'BE1-05.02', projectId: 'p4', tower: 'The Beverly', floor: 5, 
+    type: 'Căn hộ 3PN Góc', price: 8200000000, area: 105, status: 'Trống', 
+    direction: 'Tây Nam', view: 'Hồ bơi nước mặn Marina', bedrooms: 3, bathrooms: 2, 
+    handoverStandard: 'Hoàn thiện cơ bản', balconyDirection: 'Tây Nam', discountPolicy: 'Ân hạn nợ gốc và 0% lãi suất 24 tháng' 
+  },
+  { 
+    id: 'i22', code: 'BE1-12.08', projectId: 'p4', tower: 'The Beverly', floor: 12, 
+    type: 'Căn hộ 2PN Plus', price: 6100000000, area: 82, status: 'Trống', 
+    direction: 'Đông Nam', view: 'Sông Tắc & VinWonders', bedrooms: 2, bathrooms: 2, 
+    handoverStandard: 'Hoàn thiện cơ bản', balconyDirection: 'Đông Nam', discountPolicy: 'Tặng voucher xe điện VinFast 150 Triệu' 
+  },
+  { 
+    id: 'i23', code: 'BE1-12.09', projectId: 'p4', tower: 'The Beverly', floor: 12, 
+    type: 'Căn hộ Studio Luxury', price: 2800000000, area: 36, status: 'Booking', 
+    customerId: 'c3', direction: 'Bắc', view: 'Nội khu phong cách Beverly Hills', bedrooms: 1, bathrooms: 1, 
+    handoverStandard: 'Full nội thất', balconyDirection: 'Bắc', holdingAgent: 'Nguyễn Tuấn Tú', bookingExpiresAt: 'Ngày mai, 10:00' 
+  },
+
+  // The Global City (p5)
+  { 
+    id: 'i12', code: 'TGC-SH05', projectId: 'p5', tower: 'Khu Soho', floor: 1, 
+    type: 'Nhà phố Soho thương mại', price: 35000000000, area: 95, status: 'Đã bán', 
+    customerId: 'c4', direction: 'Đông Nam', view: 'Kênh đào Nhạc nước', bedrooms: 4, bathrooms: 5, 
+    handoverStandard: 'Thô', balconyDirection: 'Đông Nam' 
+  },
+  { 
+    id: 'i13', code: 'TGC-SH06', projectId: 'p5', tower: 'Khu Soho', floor: 1, 
+    type: 'Nhà phố Soho thương mại', price: 36000000000, area: 95, status: 'Booking', 
+    customerId: 'c1', direction: 'Đông Nam', view: 'Kênh đào Nhạc nước', bedrooms: 4, bathrooms: 5, 
+    handoverStandard: 'Thô', balconyDirection: 'Đông Nam', holdingAgent: 'Lê Hoàng Anh', bookingExpiresAt: 'Hôm nay, 20:00' 
+  },
+  { 
+    id: 'i24', code: 'TGC-SH07', projectId: 'p5', tower: 'Khu Soho', floor: 2, 
+    type: 'Nhà phố Soho thương mại', price: 37500000000, area: 100, status: 'Trống', 
+    direction: 'Đông Bắc', view: 'Đại lộ Festivity & TTTM 123.000m2', bedrooms: 4, bathrooms: 5, 
+    handoverStandard: 'Thô', balconyDirection: 'Đông Bắc', discountPolicy: 'Chiết khấu 10% thanh toán sớm 95% + Gói tư vấn Foster+Partners' 
+  }
 ];
 
 const INITIAL_CONTRACTS: Contract[] = [
-  { id: 'ct1', code: 'HD-921', customerId: 'c1', inventoryId: 'i1', projectId: 'p1', value: 25000000000, date: '2023-12-01', status: 'Đã ký', type: 'Hợp đồng mua bán', paymentProgress: 95, bankSupport: 'Vietcombank', signer: 'Trần Văn Sếp' },
-  { id: 'ct2', code: 'DC-922', customerId: 'c2', inventoryId: 'i3', projectId: 'p2', value: 15000000000, date: '2024-01-15', status: 'Chờ duyệt', type: 'Hợp đồng đặt cọc', paymentProgress: 10, signer: 'Nguyễn Văn Quản' },
-  { id: 'ct3', code: 'GC-923', customerId: 'c3', inventoryId: 'i4', projectId: 'p3', value: 12000000000, date: '2024-02-10', status: 'Đã ký', type: 'Thỏa thuận giữ chỗ', paymentProgress: 5, bankSupport: 'Techcombank' },
+  { 
+    id: 'ct1', code: 'HD-921', customerId: 'c1', inventoryId: 'i1', projectId: 'p1', 
+    value: 25000000000, date: '2023-12-01', status: 'Đã ký', type: 'Hợp đồng mua bán', 
+    paymentProgress: 95, bankSupport: 'Vietcombank', signer: 'Trần Văn Sếp (Tổng Giám Đốc)',
+    loanAmount: 15000000000, loanTermYears: 20, interestSupportMonths: 24, witnessAgent: 'Lê Hoàng Anh',
+    notaryOffice: 'Văn phòng Công chứng Sài Gòn', notaryDate: '2023-12-05',
+    paymentSchedule: [
+      { installment: 1, milestone: 'Ký Thỏa thuận đặt cọc', percentage: 10, amount: 2500000000, dueDate: '2023-12-01', status: 'Đã thu', paidDate: '2023-12-01', invoiceRef: 'INV-VCB-001' },
+      { installment: 2, milestone: 'Ký HĐMB - Hoàn thành phần móng', percentage: 15, amount: 3750000000, dueDate: '2024-02-15', status: 'Đã thu', paidDate: '2024-02-14', invoiceRef: 'INV-VCB-042' },
+      { installment: 3, milestone: 'Đổ sàn tầng 2 khu biệt thự', percentage: 20, amount: 5000000000, dueDate: '2024-05-20', status: 'Đã thu', paidDate: '2024-05-18', invoiceRef: 'INV-VCB-119' },
+      { installment: 4, milestone: 'Cất nóc & hoàn thiện thô', percentage: 25, amount: 6250000000, dueDate: '2024-09-30', status: 'Đã thu', paidDate: '2024-09-28', invoiceRef: 'INV-VCB-205' },
+      { installment: 5, milestone: 'Bàn giao chìa khóa & nội thất', percentage: 25, amount: 6250000000, dueDate: '2025-01-15', status: 'Đã thu', paidDate: '2025-01-12', invoiceRef: 'INV-VCB-310' },
+      { installment: 6, milestone: 'Bàn giao Giấy chứng nhận quyền sở hữu (Sổ hồng)', percentage: 5, amount: 1250000000, dueDate: '2025-08-30', status: 'Chưa đến hạn' }
+    ],
+    attachments: [
+      { id: 'att1', name: 'BanScan_HDMB_NVW0101_Full.pdf', size: '4.8 MB', date: '2023-12-02', type: 'pdf', category: 'Hợp đồng gốc' },
+      { id: 'att2', name: 'CCCD_NguyenVanTuan_2Mat.pdf', size: '1.2 MB', date: '2023-11-28', type: 'pdf', category: 'CCCD' },
+      { id: 'att3', name: 'CamKetBaoLanh_Vietcombank.pdf', size: '2.1 MB', date: '2023-12-05', type: 'pdf', category: 'UNC' },
+      { id: 'att4', name: 'BienBanNghiemThu_BanGiaoThucTe.pdf', size: '3.5 MB', date: '2025-01-15', type: 'pdf', category: 'Biên bản bàn giao' }
+    ]
+  },
+  { 
+    id: 'ct2', code: 'DC-922', customerId: 'c2', inventoryId: 'i10', projectId: 'p4', 
+    value: 5500000000, date: '2024-01-15', status: 'Chờ duyệt', type: 'Hợp đồng đặt cọc', 
+    paymentProgress: 15, bankSupport: 'Techcombank', signer: 'Nguyễn Văn Quản (Phó Giám Đốc)',
+    loanAmount: 3850000000, loanTermYears: 25, interestSupportMonths: 18, witnessAgent: 'Tuấn Tú',
+    notaryOffice: 'Văn phòng Công chứng Thủ Đức',
+    paymentSchedule: [
+      { installment: 1, milestone: 'Đặt cọc thiện chí giữ chỗ', percentage: 2, amount: 100000000, dueDate: '2024-01-10', status: 'Đã thu', paidDate: '2024-01-10', invoiceRef: 'INV-TCB-008' },
+      { installment: 2, milestone: 'Ký Hợp đồng đặt cọc (Đủ 15%)', percentage: 13, amount: 725000000, dueDate: '2024-01-20', status: 'Đã thu', paidDate: '2024-01-18', invoiceRef: 'INV-TCB-021' },
+      { installment: 3, milestone: 'Ký HĐMB chính thức', percentage: 15, amount: 825000000, dueDate: '2024-04-15', status: 'Đến hạn' },
+      { installment: 4, milestone: 'Ngân hàng Techcombank giải ngân gói vay', percentage: 65, amount: 3575000000, dueDate: '2024-08-30', status: 'Chưa đến hạn' },
+      { installment: 5, milestone: 'Nhận bàn giao sổ hồng', percentage: 5, amount: 275000000, dueDate: '2025-06-30', status: 'Chưa đến hạn' }
+    ],
+    attachments: [
+      { id: 'att5', name: 'HopDongDatCoc_BE1_0501.pdf', size: '3.2 MB', date: '2024-01-15', type: 'pdf', category: 'Hợp đồng gốc' },
+      { id: 'att6', name: 'CCCD_TranThiBichNgoc.jpg', size: '950 KB', date: '2024-01-12', type: 'jpg', category: 'CCCD' },
+      { id: 'att7', name: 'PhieuThu_TienCoc_100Tr.pdf', size: '780 KB', date: '2024-01-10', type: 'pdf', category: 'UNC' }
+    ]
+  },
+  { 
+    id: 'ct3', code: 'GC-923', customerId: 'c5', inventoryId: 'i3', projectId: 'p1', 
+    value: 16000000000, date: '2024-02-10', status: 'Đã ký', type: 'Thỏa thuận giữ chỗ', 
+    paymentProgress: 10, bankSupport: 'Techcombank', signer: 'Trần Văn Sếp',
+    loanAmount: 11200000000, loanTermYears: 20, interestSupportMonths: 24, witnessAgent: 'Tuấn Tú',
+    paymentSchedule: [
+      { installment: 1, milestone: 'Thỏa thuận giữ chỗ Shophouse biển', percentage: 10, amount: 1600000000, dueDate: '2024-02-10', status: 'Đã thu', paidDate: '2024-02-10', invoiceRef: 'INV-TCB-088' },
+      { installment: 2, milestone: 'Ký Hợp đồng mua bán chính thức', percentage: 15, amount: 2400000000, dueDate: '2024-04-10', status: 'Đến hạn' },
+      { installment: 3, milestone: 'Xong kết cấu sàn tầng 1', percentage: 15, amount: 2400000000, dueDate: '2024-07-30', status: 'Chưa đến hạn' },
+      { installment: 4, milestone: 'Cất nóc phân khu Shophouse', percentage: 30, amount: 4800000000, dueDate: '2024-11-30', status: 'Chưa đến hạn' },
+      { installment: 5, milestone: 'Bàn giao kinh doanh thương mại', percentage: 25, amount: 4000000000, dueDate: '2025-04-30', status: 'Chưa đến hạn' },
+      { installment: 6, milestone: 'Bàn giao Giấy chứng nhận quyền sở hữu', percentage: 5, amount: 800000000, dueDate: '2025-10-30', status: 'Chưa đến hạn' }
+    ],
+    attachments: [
+      { id: 'att8', name: 'ThoaThuanGiuCho_NVW_0201.pdf', size: '2.9 MB', date: '2024-02-10', type: 'pdf', category: 'Hợp đồng gốc' },
+      { id: 'att9', name: 'PhieuThu_DatCoc_GiuCho.pdf', size: '620 KB', date: '2024-02-10', type: 'pdf', category: 'UNC' }
+    ]
+  },
+  { 
+    id: 'ct4', code: 'HD-924', customerId: 'c4', inventoryId: 'i8', projectId: 'p3', 
+    value: 32000000000, date: '2024-03-20', status: 'Đã ký', type: 'Hợp đồng mua bán', 
+    paymentProgress: 80, bankSupport: 'MB Bank', signer: 'Trần Văn Sếp',
+    loanAmount: 20000000000, loanTermYears: 15, interestSupportMonths: 24, witnessAgent: 'Thanh Hà',
+    notaryOffice: 'Văn phòng Công chứng Bến Thành', notaryDate: '2024-03-25',
+    paymentSchedule: [
+      { installment: 1, milestone: 'Ký HĐMB căn hộ hạng sang Grand Manhattan', percentage: 20, amount: 6400000000, dueDate: '2024-03-20', status: 'Đã thu', paidDate: '2024-03-20', invoiceRef: 'INV-MBB-101' },
+      { installment: 2, milestone: 'Hoàn thành thi công phần ngầm', percentage: 15, amount: 4800000000, dueDate: '2024-06-15', status: 'Đã thu', paidDate: '2024-06-12', invoiceRef: 'INV-MBB-215' },
+      { installment: 3, milestone: 'Cất nóc tháp căn hộ', percentage: 25, amount: 8000000000, dueDate: '2024-09-30', status: 'Đã thu', paidDate: '2024-09-25', invoiceRef: 'INV-MBB-340' },
+      { installment: 4, milestone: 'Hoàn thiện mặt ngoài kính Low-E', percentage: 20, amount: 6400000000, dueDate: '2024-12-30', status: 'Đã thu', paidDate: '2024-12-28', invoiceRef: 'INV-MBB-450' },
+      { installment: 5, milestone: 'Thông báo nhận bàn giao căn hộ VIP', percentage: 15, amount: 4800000000, dueDate: '2025-05-15', status: 'Đến hạn' },
+      { installment: 6, milestone: 'Bàn giao sổ hồng chủ quyền', percentage: 5, amount: 1600000000, dueDate: '2025-11-30', status: 'Chưa đến hạn' }
+    ],
+    attachments: [
+      { id: 'att10', name: 'HDMB_TheGrandManhattan_TGM1501.pdf', size: '6.4 MB', date: '2024-03-22', type: 'pdf', category: 'Hợp đồng gốc' },
+      { id: 'att11', name: 'HoSoVay_MBBank_PheDuyet.pdf', size: '3.8 MB', date: '2024-03-18', type: 'pdf', category: 'UNC' },
+      { id: 'att12', name: 'BienBanNghiemThu_MatNgoai.pdf', size: '1.9 MB', date: '2024-12-29', type: 'pdf', category: 'Biên bản bàn giao' }
+    ]
+  },
+  { 
+    id: 'ct5', code: 'HD-925', customerId: 'c7', inventoryId: 'i5', projectId: 'p2', 
+    value: 12500000000, date: '2024-04-12', status: 'Đã ký', type: 'Hợp đồng mua bán', 
+    paymentProgress: 100, bankSupport: 'VietinBank', signer: 'Lê Hoàng Anh', witnessAgent: 'Lê Hoàng Anh',
+    notaryOffice: 'Văn phòng Công chứng Biên Hòa', notaryDate: '2024-04-18',
+    paymentSchedule: [
+      { installment: 1, milestone: 'Ký HĐMB nhà phố đảo Phượng Hoàng', percentage: 30, amount: 3750000000, dueDate: '2024-04-12', status: 'Đã thu', paidDate: '2024-04-12', invoiceRef: 'INV-VTB-019' },
+      { installment: 2, milestone: 'Cất nóc thô nhà phố ven sông', percentage: 40, amount: 5000000000, dueDate: '2024-07-20', status: 'Đã thu', paidDate: '2024-07-18', invoiceRef: 'INV-VTB-088' },
+      { installment: 3, milestone: 'Nhận bàn giao nhà hoàn thiện', percentage: 25, amount: 3125000000, dueDate: '2024-11-15', status: 'Đã thu', paidDate: '2024-11-10', invoiceRef: 'INV-VTB-155' },
+      { installment: 4, milestone: 'Bàn giao sổ hồng chính thức', percentage: 5, amount: 625000000, dueDate: '2025-03-30', status: 'Đã thu', paidDate: '2025-03-25', invoiceRef: 'INV-VTB-201' }
+    ],
+    attachments: [
+      { id: 'att13', name: 'HDMB_AquaCity_AQC12A01.pdf', size: '5.1 MB', date: '2024-04-14', type: 'pdf', category: 'Hợp đồng gốc' },
+      { id: 'att14', name: 'GiayChungNhan_SoHong_Scan.pdf', size: '4.2 MB', date: '2025-03-26', type: 'pdf', category: 'Biên bản bàn giao' },
+      { id: 'att15', name: 'HoaDonDienTu_ThanhToan100.pdf', size: '1.1 MB', date: '2025-03-26', type: 'pdf', category: 'UNC' }
+    ]
+  },
+  { 
+    id: 'ct6', code: 'DC-926', customerId: 'c4', inventoryId: 'i12', projectId: 'p5', 
+    value: 35000000000, date: '2024-05-08', status: 'Đã ký', type: 'Hợp đồng đặt cọc', 
+    paymentProgress: 30, bankSupport: 'Techcombank', signer: 'Trần Văn Sếp', witnessAgent: 'Thanh Hà',
+    paymentSchedule: [
+      { installment: 1, milestone: 'Ký thỏa thuận đặt cọc Shophouse Soho', percentage: 10, amount: 3500000000, dueDate: '2024-05-08', status: 'Đã thu', paidDate: '2024-05-08', invoiceRef: 'INV-TCB-501' },
+      { installment: 2, milestone: 'Bổ sung vốn đối ứng cọc đợt 2', percentage: 20, amount: 7000000000, dueDate: '2024-06-08', status: 'Đã thu', paidDate: '2024-06-05', invoiceRef: 'INV-TCB-582' },
+      { installment: 3, milestone: 'Ký HĐMB chính thức', percentage: 20, amount: 7000000000, dueDate: '2024-09-15', status: 'Đến hạn' },
+      { installment: 4, milestone: 'Cất nóc phân khu Soho', percentage: 20, amount: 7000000000, dueDate: '2024-12-30', status: 'Chưa đến hạn' },
+      { installment: 5, milestone: 'Bàn giao hoàn thiện mặt ngoài', percentage: 25, amount: 8750000000, dueDate: '2025-05-30', status: 'Chưa đến hạn' },
+      { installment: 6, milestone: 'Bàn giao sổ hồng', percentage: 5, amount: 1750000000, dueDate: '2025-11-30', status: 'Chưa đến hạn' }
+    ],
+    attachments: [
+      { id: 'att16', name: 'HD_DatCoc_TGC_SH05.pdf', size: '4.1 MB', date: '2024-05-09', type: 'pdf', category: 'Hợp đồng gốc' },
+      { id: 'att17', name: 'UNC_NopTien_Dot1_Dot2.pdf', size: '1.5 MB', date: '2024-06-06', type: 'pdf', category: 'UNC' }
+    ]
+  },
+  { 
+    id: 'ct7', code: 'HD-927', customerId: 'c8', inventoryId: 'i6', projectId: 'p2', 
+    value: 24000000000, date: '2024-06-15', status: 'Đã ký', type: 'Hợp đồng mua bán', 
+    paymentProgress: 50, bankSupport: 'Vietcombank', signer: 'Trần Văn Sếp',
+    loanAmount: 16800000000, loanTermYears: 20, interestSupportMonths: 24, witnessAgent: 'Thanh Hà',
+    paymentSchedule: [
+      { installment: 1, milestone: 'Ký HĐMB biệt thự ven sông The Suite', percentage: 20, amount: 4800000000, dueDate: '2024-06-15', status: 'Đã thu', paidDate: '2024-06-15', invoiceRef: 'INV-VCB-601' },
+      { installment: 2, milestone: 'Đổ sàn tầng 2 khu biệt thự', percentage: 15, amount: 3600000000, dueDate: '2024-08-15', status: 'Đã thu', paidDate: '2024-08-12', invoiceRef: 'INV-VCB-688' },
+      { installment: 3, milestone: 'Cất nóc công trình', percentage: 15, amount: 3600000000, dueDate: '2024-10-30', status: 'Đã thu', paidDate: '2024-10-28', invoiceRef: 'INV-VCB-755' },
+      { installment: 4, milestone: 'Hoàn thiện hệ thống hạ tầng cảnh quan', percentage: 20, amount: 4800000000, dueDate: '2025-01-30', status: 'Đến hạn' },
+      { installment: 5, milestone: 'Bàn giao chìa khóa trao tay', percentage: 25, amount: 6000000000, dueDate: '2025-06-30', status: 'Chưa đến hạn' },
+      { installment: 6, milestone: 'Bàn giao sổ hồng', percentage: 5, amount: 1200000000, dueDate: '2025-12-30', status: 'Chưa đến hạn' }
+    ],
+    attachments: [
+      { id: 'att18', name: 'HDMB_BietThuVenSong_AQC.pdf', size: '5.5 MB', date: '2024-06-16', type: 'pdf', category: 'Hợp đồng gốc' },
+      { id: 'att19', name: 'CamKetBaoLanh_Vietcombank.pdf', size: '2.0 MB', date: '2024-06-15', type: 'pdf', category: 'UNC' }
+    ]
+  },
+  { 
+    id: 'ct8', code: 'GC-928', customerId: 'c3', inventoryId: 'i23', projectId: 'p4', 
+    value: 2800000000, date: '2024-07-01', status: 'Chờ duyệt', type: 'Thỏa thuận giữ chỗ', 
+    paymentProgress: 10, bankSupport: 'Không vay', signer: 'Nguyễn Văn Quản', witnessAgent: 'Trần Khoa',
+    paymentSchedule: [
+      { installment: 1, milestone: 'Ký thỏa thuận giữ chỗ căn Studio Beverly', percentage: 2, amount: 50000000, dueDate: '2024-07-01', status: 'Đã thu', paidDate: '2024-07-01', invoiceRef: 'INV-VGP-001' },
+      { installment: 2, milestone: 'Bổ sung đủ 10% giá trị căn hộ', percentage: 8, amount: 230000000, dueDate: '2024-07-15', status: 'Đã thu', paidDate: '2024-07-12', invoiceRef: 'INV-VGP-015' },
+      { installment: 3, milestone: 'Ký HĐMB chính thức', percentage: 15, amount: 420000000, dueDate: '2024-09-30', status: 'Đến hạn' },
+      { installment: 4, milestone: 'Thanh toán các đợt tiếp theo (10 đợt)', percentage: 50, amount: 1400000000, dueDate: '2025-05-30', status: 'Chưa đến hạn' },
+      { installment: 5, milestone: 'Nhận bàn giao căn hộ', percentage: 25, amount: 700000000, dueDate: '2025-09-30', status: 'Chưa đến hạn' }
+    ],
+    attachments: [
+      { id: 'att20', name: 'TT_GiuCho_BE1_1209.pdf', size: '2.2 MB', date: '2024-07-02', type: 'pdf', category: 'Hợp đồng gốc' },
+      { id: 'att21', name: 'CCCD_LeHoangCuong.jpg', size: '800 KB', date: '2024-07-01', type: 'jpg', category: 'CCCD' }
+    ]
+  }
+];
+
+export const INITIAL_BOOKING_TICKETS: BookingTicket[] = [
+  {
+    id: 'BK-1001',
+    code: 'BK-1001',
+    customerId: 'c1',
+    customerName: 'Nguyễn Văn Tuấn',
+    customerPhone: '0901234567',
+    customerEmail: 'tuan.nguyen@investor.vn',
+    projectId: 'p2',
+    projectName: 'Aqua City',
+    unitId: 'i5',
+    unitCode: 'AQC-12A.01',
+    price: 12500000000,
+    depositAmount: 100000000,
+    status: 'sale',
+    type: 'Giữ chỗ có hoàn lại',
+    priority: 'normal',
+    paymentMethod: 'Chuyển khoản',
+    docs: '2/4',
+    agent: 'Lê Hoàng Anh',
+    time: '15 phút trước',
+    createdAt: '2026-07-20 09:30',
+    expiresAt: 'Còn 45 phút',
+    remainingMinutes: 45,
+    bankRef: 'VCB-8839210492',
+    notes: 'Khách hàng quan tâm phân khu đảo Phượng Hoàng, đã chuyển khoản giữ chỗ 100 triệu qua Vietcombank QR.',
+    approvalHistory: [
+      { step: 'sale', actor: 'Lê Hoàng Anh', action: 'created', timestamp: '09:30 20/07', comment: 'Khởi tạo phiếu booking giữ chỗ có hoàn lại.' }
+    ]
+  },
+  {
+    id: 'BK-1002',
+    code: 'BK-1002',
+    customerId: 'c2',
+    customerName: 'Trần Thị Bích Ngọc',
+    customerPhone: '0912345678',
+    customerEmail: 'bichngoc.tran@vietcapital.vn',
+    projectId: 'p1',
+    projectName: 'NovaWorld Phan Thiet',
+    unitId: 'i2',
+    unitCode: 'NVW-01.02',
+    price: 18500000000,
+    depositAmount: 200000000,
+    status: 'manager',
+    type: 'Giữ chỗ không hoàn lại',
+    priority: 'high',
+    paymentMethod: 'Chuyển khoản',
+    docs: '3/3',
+    agent: 'Nguyễn Mai',
+    time: '1 giờ trước',
+    createdAt: '2026-07-20 08:45',
+    expiresAt: 'Còn 30 phút',
+    remainingMinutes: 30,
+    bankRef: 'TCB-902188231',
+    notes: 'Khách hàng VIP yêu cầu áp dụng chiết khấu 3% thanh toán sớm + Tặng 2 năm phí quản lý.',
+    approvalHistory: [
+      { step: 'sale', actor: 'Nguyễn Mai', action: 'created', timestamp: '08:45 20/07', comment: 'Tạo phiếu giữ chỗ ưu tiên song lập Florida.' },
+      { step: 'manager', actor: 'Nguyễn Mai', action: 'approved', timestamp: '09:10 20/07', comment: 'Trình quản lý sàn duyệt mức chiết khấu bổ sung.' }
+    ]
+  },
+  {
+    id: 'BK-1003',
+    code: 'BK-1003',
+    customerId: 'c4',
+    customerName: 'Phạm Minh Tuấn',
+    customerPhone: '0912987654',
+    customerEmail: 'minhtuan.pham@saigonres.com',
+    projectId: 'p5',
+    projectName: 'The Global City',
+    unitId: 'i13',
+    unitCode: 'TGC-SH06',
+    price: 36000000000,
+    depositAmount: 500000000,
+    status: 'director',
+    type: 'Ký HĐ Cọc',
+    priority: 'urgent',
+    paymentMethod: 'Chuyển khoản',
+    docs: '4/4',
+    agent: 'Thanh Hà',
+    time: '2 giờ trước',
+    createdAt: '2026-07-20 07:30',
+    expiresAt: 'Còn 10 phút',
+    remainingMinutes: 10,
+    bankRef: 'MBB-554432109',
+    notes: 'Căn Shophouse Soho trục chính kênh đào. Cần Giám đốc khối ký duyệt phân bổ giỏ hàng ngoại giao.',
+    approvalHistory: [
+      { step: 'sale', actor: 'Thanh Hà', action: 'created', timestamp: '07:30 20/07', comment: 'Lập phiếu cọc chính thức shophouse Soho.' },
+      { step: 'manager', actor: 'Trần Khoa (Trưởng phòng)', action: 'approved', timestamp: '08:00 20/07', comment: 'Đã thẩm định hồ sơ tài chính khách VVIP.' },
+      { step: 'director', actor: 'Trần Khoa', action: 'approved', timestamp: '08:15 20/07', comment: 'Trình GĐ Khối ký duyệt lock căn trực tiếp.' }
+    ]
+  },
+  {
+    id: 'BK-1004',
+    code: 'BK-1004',
+    customerId: 'c5',
+    customerName: 'Hoàng Thị Thảo',
+    customerPhone: '0945678123',
+    customerEmail: 'thaonhi.hoang@gmail.com',
+    projectId: 'p1',
+    projectName: 'NovaWorld Phan Thiet',
+    unitId: 'i3',
+    unitCode: 'NVW-02.01',
+    price: 16000000000,
+    depositAmount: 150000000,
+    status: 'payment',
+    type: 'Giữ chỗ có hoàn lại',
+    priority: 'normal',
+    paymentMethod: 'Thẻ tín dụng',
+    docs: '4/4',
+    agent: 'Tuấn Tú',
+    time: '3 giờ trước',
+    createdAt: '2026-07-20 06:15',
+    expiresAt: 'Còn 1 giờ 15 phút',
+    remainingMinutes: 75,
+    bankRef: 'POS-SAC-9921',
+    notes: 'Khách quẹt thẻ tín dụng Sacombank tại VP giao dịch. Chờ Kế toán đối soát sao kê ngân hàng.',
+    approvalHistory: [
+      { step: 'sale', actor: 'Tuấn Tú', action: 'created', timestamp: '06:15 20/07', comment: 'Khởi tạo booking shophouse biển.' },
+      { step: 'manager', actor: 'Trần Khoa', action: 'approved', timestamp: '07:00 20/07', comment: 'Quản lý duyệt.' },
+      { step: 'director', actor: 'Giám Đốc Hùng', action: 'approved', timestamp: '07:30 20/07', comment: 'GĐ Khối duyệt phân bổ căn.' }
+    ]
+  },
+  {
+    id: 'BK-1005',
+    code: 'BK-1005',
+    customerId: 'c7',
+    customerName: 'Vũ Thu Trang',
+    customerPhone: '0966554433',
+    customerEmail: 'trang.vu@fashionvn.com',
+    projectId: 'p2',
+    projectName: 'Aqua City',
+    unitId: 'i7',
+    unitCode: 'AQC-08B.01',
+    price: 9800000000,
+    depositAmount: 100000000,
+    status: 'done',
+    type: 'Ký HĐ Cọc',
+    priority: 'normal',
+    paymentMethod: 'Chuyển khoản',
+    docs: '4/4',
+    agent: 'Lê Hoàng Anh',
+    time: 'Hôm qua',
+    createdAt: '2026-07-19 14:00',
+    expiresAt: 'Hoàn tất',
+    remainingMinutes: 0,
+    bankRef: 'VCB-11029482',
+    notes: 'Đã hoàn tất xác nhận tiền vào TK chủ đầu tư. Đã phát hành Phiếu Đặt Cọc điện tử và gửi email khách hàng.',
+    approvalHistory: [
+      { step: 'sale', actor: 'Lê Hoàng Anh', action: 'created', timestamp: '14:00 19/07', comment: 'Tạo phiếu cọc căn 1PN Suite.' },
+      { step: 'manager', actor: 'Trần Khoa', action: 'approved', timestamp: '14:30 19/07', comment: 'Duyệt hồ sơ hợp lệ.' },
+      { step: 'director', actor: 'Giám Đốc Hùng', action: 'approved', timestamp: '15:10 19/07', comment: 'Ký duyệt số phiếu cọc.' },
+      { step: 'payment', actor: 'Kế Toán Phương', action: 'approved', timestamp: '16:00 19/07', comment: 'Khớp tiền 100.000.000 VNĐ vào tài khoản Novaland.' }
+    ]
+  },
+  {
+    id: 'BK-1006',
+    code: 'BK-1006',
+    customerId: 'c3',
+    customerName: 'Lê Hoàng Cường',
+    customerPhone: '0987654321',
+    customerEmail: 'cuong.le@techvina.com',
+    projectId: 'p4',
+    projectName: 'Vinhomes Grand Park',
+    unitId: 'i23',
+    unitCode: 'BE1-12.09',
+    price: 2800000000,
+    depositAmount: 50000000,
+    status: 'sale',
+    type: 'Giữ chỗ có hoàn lại',
+    priority: 'normal',
+    paymentMethod: 'Chuyển khoản',
+    docs: '2/3',
+    agent: 'Trần Khoa',
+    time: '35 phút trước',
+    createdAt: '2026-07-20 09:10',
+    expiresAt: 'Còn 1 giờ',
+    remainingMinutes: 60,
+    bankRef: 'TCB-44102941',
+    notes: 'Khách hàng trẻ mua studio đầu tư cho thuê, đang chờ gửi ảnh CCCD 2 mặt để hoàn tất hồ sơ.',
+    approvalHistory: [
+      { step: 'sale', actor: 'Trần Khoa', action: 'created', timestamp: '09:10 20/07', comment: 'Tạo phiếu giữ chỗ căn studio Beverly.' }
+    ]
+  },
+  {
+    id: 'BK-1007',
+    code: 'BK-1007',
+    customerId: 'c6',
+    customerName: 'Đặng Quốc Huy',
+    customerPhone: '0977889900',
+    customerEmail: 'huy.dang@greenland.vn',
+    projectId: 'p3',
+    projectName: 'The Grand Manhattan',
+    unitId: 'i8',
+    unitCode: 'TGM-15.01',
+    price: 15200000000,
+    depositAmount: 200000000,
+    status: 'payment',
+    type: 'Giữ chỗ không hoàn lại',
+    priority: 'high',
+    paymentMethod: 'Tiền mặt',
+    docs: '3/4',
+    agent: 'Minh Anh',
+    time: '4 giờ trước',
+    createdAt: '2026-07-20 05:30',
+    expiresAt: 'Còn 20 phút',
+    remainingMinutes: 20,
+    bankRef: 'PT-NOVA-8821',
+    notes: 'Khách hàng nộp 200 triệu tiền mặt tại quỹ Novaland Cô Giang, thủ quỹ đang lập biên bản niêm phong nộp ngân hàng.',
+    approvalHistory: [
+      { step: 'sale', actor: 'Minh Anh', action: 'created', timestamp: '05:30 20/07', comment: 'Khởi tạo booking căn hộ hạng sang Q1.' },
+      { step: 'manager', actor: 'Trần Khoa', action: 'approved', timestamp: '06:15 20/07', comment: 'Quản lý duyệt.' },
+      { step: 'director', actor: 'Giám Đốc Hùng', action: 'approved', timestamp: '06:45 20/07', comment: 'GĐ duyệt.' }
+    ]
+  },
+  {
+    id: 'BK-1008',
+    code: 'BK-1008',
+    customerId: 'c8',
+    customerName: 'Ngô Đức Thắng',
+    customerPhone: '0933221144',
+    customerEmail: 'thang.ngo@logistics24.vn',
+    projectId: 'p2',
+    projectName: 'Aqua City',
+    unitId: 'i6',
+    unitCode: 'AQC-12A.02',
+    price: 24000000000,
+    depositAmount: 200000000,
+    status: 'done',
+    type: 'Ký HĐ Cọc',
+    priority: 'normal',
+    paymentMethod: 'Chuyển khoản',
+    docs: '4/4',
+    agent: 'Thanh Hà',
+    time: '2 ngày trước',
+    createdAt: '2026-07-18 10:00',
+    expiresAt: 'Hoàn tất',
+    remainingMinutes: 0,
+    bankRef: 'BIDV-9938217',
+    notes: 'Hoàn tất cọc căn biệt thự ven sông The Suite, chuẩn bị ký HĐMB vào ngày 25/07.',
+    approvalHistory: [
+      { step: 'sale', actor: 'Thanh Hà', action: 'created', timestamp: '10:00 18/07', comment: 'Tạo phiếu cọc.' },
+      { step: 'manager', actor: 'Trần Khoa', action: 'approved', timestamp: '11:00 18/07', comment: 'Quản lý sàn duyệt.' },
+      { step: 'director', actor: 'Giám Đốc Hùng', action: 'approved', timestamp: '14:00 18/07', comment: 'GĐ duyệt.' },
+      { step: 'payment', actor: 'Kế Toán Phương', action: 'approved', timestamp: '16:30 18/07', comment: 'Đã khớp tiền 200 triệu.' }
+    ]
+  }
 ];
 
 const INITIAL_CAMPAIGNS: Campaign[] = [
@@ -230,15 +770,28 @@ const INITIAL_AI_CHAT_HISTORY: AIChatMessage[] = [
 ];
 
 interface AppState extends AppDatabase {
+  // Actions for Projects
+  addProject: (project: Omit<Project, 'id'>) => void;
+
   // Actions for Customers
   addCustomer: (customer: Omit<Customer, 'id' | 'code' | 'createdAt'>) => void;
   updateCustomer: (id: string, data: Partial<Customer>) => void;
   
   // Actions for Inventory
   updateInventoryStatus: (id: string, status: InventoryItem['status'], customerId?: string) => void;
+  addInventoryItem: (item: Omit<InventoryItem, 'id'>) => void;
   
+  // Actions for Booking Workflow
+  bookingTickets: BookingTicket[];
+  addBookingTicket: (ticket: Omit<BookingTicket, 'id' | 'code' | 'createdAt'>) => void;
+  updateBookingTicketStatus: (id: string, nextStatus: BookingTicket['status'], note?: string, actor?: string) => void;
+  rejectBookingTicket: (id: string, reason?: string, actor?: string) => void;
+  extendBookingSLA: (id: string, minutes: number, reason?: string) => void;
+
   // Actions for Contracts
   addContract: (contract: Omit<Contract, 'id' | 'code' | 'date'>) => void;
+  updateContractStatus: (id: string, status: Contract['status']) => void;
+  recordContractPayment: (contractId: string, installmentNumber: number, paidAmount?: number, invoiceRef?: string) => void;
   
   // Actions for Surveys
   addReview: (review: Omit<Review, 'id' | 'date' | 'sentiment'>) => void;
@@ -281,6 +834,7 @@ export const useStore = create<AppState>()(
       projects: INITIAL_PROJECTS,
       inventory: INITIAL_INVENTORY,
       contracts: INITIAL_CONTRACTS,
+      bookingTickets: INITIAL_BOOKING_TICKETS,
       campaigns: INITIAL_CAMPAIGNS,
       articles: INITIAL_ARTICLES,
       landingPages: INITIAL_LANDING_PAGES,
@@ -478,6 +1032,12 @@ export const useStore = create<AppState>()(
         return { reviews: [newReview, ...state.reviews] };
       }),
 
+      addProject: (data) => set((state) => {
+        const newId = `p${state.projects.length + 1}`;
+        const newProject: Project = { ...data, id: newId };
+        return { projects: [newProject, ...state.projects] };
+      }),
+
       addCustomer: (data) => set((state) => {
         const newId = `c${state.customers.length + 1}`;
         const newCode = `KH-${String(state.customers.length + 1).padStart(3, '0')}`;
@@ -498,14 +1058,177 @@ export const useStore = create<AppState>()(
         inventory: state.inventory.map(i => i.id === id ? { ...i, status, customerId } : i)
       })),
 
+      addInventoryItem: (item) => set((state) => {
+        const newId = 'i_' + Date.now();
+        return { inventory: [{ ...item, id: newId }, ...state.inventory] };
+      }),
+
+      addBookingTicket: (data) => set((state) => {
+        const currentList = state.bookingTickets || INITIAL_BOOKING_TICKETS;
+        const nextNum = currentList.length + 1001;
+        const newId = `BK-${nextNum}`;
+        const newTicket: BookingTicket = {
+          ...data,
+          id: newId,
+          code: newId,
+          createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+          approvalHistory: [
+            {
+              step: 'sale',
+              actor: data.agent || 'Sale Agent',
+              action: 'created',
+              timestamp: 'Vừa xong',
+              comment: data.notes || 'Khởi tạo phiếu booking giữ chỗ mới.'
+            }
+          ]
+        };
+
+        // Update inventory item status to 'Booking'
+        const updatedInventory = state.inventory.map(i =>
+          i.id === data.unitId ? {
+            ...i,
+            status: 'Booking' as const,
+            customerId: data.customerId,
+            holdingAgent: data.agent,
+            bookingExpiresAt: data.expiresAt
+          } : i
+        );
+
+        return {
+          bookingTickets: [newTicket, ...currentList],
+          inventory: updatedInventory
+        };
+      }),
+
+      updateBookingTicketStatus: (id, nextStatus, note, actor = 'Hệ thống') => set((state) => {
+        const currentList = state.bookingTickets || INITIAL_BOOKING_TICKETS;
+        const updatedTickets = currentList.map(t => {
+          if (t.id !== id) return t;
+          const historyItem = {
+            step: nextStatus,
+            actor,
+            action: 'approved' as const,
+            timestamp: 'Vừa xong',
+            comment: note || `Chuyển trạng thái sang ${nextStatus}.`
+          };
+          return {
+            ...t,
+            status: nextStatus,
+            time: 'Vừa xong',
+            priority: 'normal' as const,
+            approvalHistory: [...(t.approvalHistory || []), historyItem]
+          };
+        });
+
+        return { bookingTickets: updatedTickets };
+      }),
+
+      rejectBookingTicket: (id, reason = 'Từ chối duyệt, trả về Sale hoàn thiện hồ sơ', actor = 'Quản lý') => set((state) => {
+        const currentList = state.bookingTickets || INITIAL_BOOKING_TICKETS;
+        const updatedTickets = currentList.map(t => {
+          if (t.id !== id) return t;
+          const historyItem = {
+            step: 'sale',
+            actor,
+            action: 'rejected' as const,
+            timestamp: 'Vừa xong',
+            comment: reason
+          };
+          return {
+            ...t,
+            status: 'sale' as const,
+            time: 'Vừa xong',
+            priority: 'high' as const,
+            notes: `[Từ chối bởi ${actor}]: ${reason}`,
+            approvalHistory: [...(t.approvalHistory || []), historyItem]
+          };
+        });
+
+        return { bookingTickets: updatedTickets };
+      }),
+
+      extendBookingSLA: (id, minutes, reason = 'Khách xin thêm thời gian thu xếp tài chính') => set((state) => {
+        const currentList = state.bookingTickets || INITIAL_BOOKING_TICKETS;
+        const updatedTickets = currentList.map(t => {
+          if (t.id !== id) return t;
+          const newMinutes = (t.remainingMinutes || 30) + minutes;
+          const historyItem = {
+            step: t.status,
+            actor: 'Quản trị viên',
+            action: 'extended' as const,
+            timestamp: 'Vừa xong',
+            comment: `Gia hạn thêm ${minutes} phút. Lý do: ${reason}`
+          };
+          return {
+            ...t,
+            remainingMinutes: newMinutes,
+            expiresAt: `Gia hạn +${minutes}p (${newMinutes} phút còn lại)`,
+            approvalHistory: [...(t.approvalHistory || []), historyItem]
+          };
+        });
+
+        return { bookingTickets: updatedTickets };
+      }),
+
+      updateContractStatus: (id, status) => set((state) => ({
+        contracts: state.contracts.map(c => c.id === id ? { ...c, status } : c)
+      })),
+
+      recordContractPayment: (contractId, installmentNumber, paidAmount, invoiceRef) => set((state) => {
+        const contract = state.contracts.find(c => c.id === contractId);
+        if (!contract || !contract.paymentSchedule) return state;
+
+        const updatedSchedule = contract.paymentSchedule.map(s => {
+          if (s.installment === installmentNumber) {
+            return {
+              ...s,
+              status: 'Đã thu' as const,
+              paidDate: new Date().toISOString().split('T')[0],
+              invoiceRef: invoiceRef || `INV-AUTO-${Date.now().toString().slice(-4)}`
+            };
+          }
+          return s;
+        });
+
+        const totalPaid = updatedSchedule
+          .filter(s => s.status === 'Đã thu')
+          .reduce((sum, s) => sum + s.amount, 0);
+
+        const newPaymentProgress = Math.min(100, Math.round((totalPaid / contract.value) * 100));
+
+        return {
+          contracts: state.contracts.map(c => c.id === contractId ? {
+            ...c,
+            paymentProgress: newPaymentProgress,
+            paymentSchedule: updatedSchedule
+          } : c)
+        };
+      }),
+
       addContract: (data) => set((state) => {
         const newId = `ct${state.contracts.length + 1}`;
         const newCode = `HD-${String(state.contracts.length + 922).padStart(3, '0')}`;
+        
+        // Generate default 5-installment schedule if none provided
+        const defaultSchedule = data.paymentSchedule || [
+          { installment: 1, milestone: 'Ký thỏa thuận đặt cọc', percentage: 15, amount: Math.round(data.value * 0.15), dueDate: new Date().toISOString().split('T')[0], status: 'Đã thu' as const, paidDate: new Date().toISOString().split('T')[0], invoiceRef: `INV-INIT-${Date.now().toString().slice(-4)}` },
+          { installment: 2, milestone: 'Ký HĐMB - Hoàn thành móng', percentage: 15, amount: Math.round(data.value * 0.15), dueDate: '2024-09-30', status: 'Đến hạn' as const },
+          { installment: 3, milestone: 'Cất nóc công trình', percentage: 20, amount: Math.round(data.value * 0.20), dueDate: '2024-12-30', status: 'Chưa đến hạn' as const },
+          { installment: 4, milestone: 'Thông báo nhận bàn giao nhà', percentage: 45, amount: Math.round(data.value * 0.45), dueDate: '2025-06-30', status: 'Chưa đến hạn' as const },
+          { installment: 5, milestone: 'Bàn giao Giấy chứng nhận quyền sở hữu', percentage: 5, amount: Math.round(data.value * 0.05), dueDate: '2025-12-30', status: 'Chưa đến hạn' as const }
+        ];
+
         const newContract: Contract = {
           ...data,
           id: newId,
           code: newCode,
-          date: new Date().toISOString().split('T')[0]
+          date: new Date().toISOString().split('T')[0],
+          paymentProgress: data.paymentProgress || 15,
+          paymentSchedule: defaultSchedule,
+          attachments: [
+            { id: `att_${Date.now()}_1`, name: `BanScan_${newCode}_Full.pdf`, size: '3.4 MB', date: new Date().toISOString().split('T')[0], type: 'pdf', category: 'Hợp đồng gốc' },
+            { id: `att_${Date.now()}_2`, name: 'GiayXacNhanThanhToan_Dot1.pdf', size: '820 KB', date: new Date().toISOString().split('T')[0], type: 'pdf', category: 'UNC' }
+          ]
         };
         
         // Also update inventory status automatically
@@ -520,7 +1243,7 @@ export const useStore = create<AppState>()(
       })
     }),
     {
-      name: 'novacrm-storage', // name of item in local storage
+      name: 'novacrm-storage-v5', // name of item in local storage
     }
   )
 );
