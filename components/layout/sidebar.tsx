@@ -2,7 +2,7 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, PieChart, Briefcase, Contact, Building, Layers, Map, LineChart as LineChartIcon, Calculator, Megaphone, CheckCircle, FileSignature, ClipboardList, MessageCircle, PhoneCall, FolderOpen, ClipboardCheck, Gift, Crown, CalendarRange, BarChart4, Database, BrainCircuit, Workflow, Trophy, Store, Newspaper, Settings, Smartphone, Puzzle, ScanLine, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
+import { LayoutDashboard, Users, PieChart, Briefcase, Contact, Building, Layers, Map, Eye, LineChart as LineChartIcon, Calculator, Megaphone, CheckCircle, FileSignature, ClipboardList, MessageCircle, PhoneCall, FolderOpen, ClipboardCheck, Gift, Crown, CalendarRange, BarChart4, Database, BrainCircuit, Workflow, Trophy, Store, Newspaper, Settings, Smartphone, Puzzle, ScanLine, ChevronLeft, ChevronRight, ChevronDown, KeyRound, Gavel, Building2, RefreshCw } from 'lucide-react'
 
 export const NAV_GROUPS = [
   {
@@ -19,6 +19,7 @@ export const NAV_GROUPS = [
     links: [
       { href: "/projects", icon: Building, label: "Kho Dự Án" },
       { href: "/gis", icon: Map, label: "Bản Đồ GIS" },
+      { href: "/panorama", icon: Eye, label: "Sa Bàn & VR 360" },
       { href: "/market-data", icon: Database, label: "Dữ Liệu Thị Trường" }
     ]
   },
@@ -37,6 +38,8 @@ export const NAV_GROUPS = [
     title: "Tiện Ích & Vận Hành",
     links: [
       { href: "/tasks", icon: ClipboardList, label: "Công Việc & Lịch" },
+      { href: "/handover", icon: KeyRound, label: "Bàn Giao & Nghiệm Thu" },
+      { href: "/operations", icon: Building2, label: "Vận Hành & Cư Dân" },
       { href: "/documents", icon: FolderOpen, label: "Kho Tài Liệu" },
       { href: "/chat", icon: MessageCircle, label: "Nhắn Tin Nội Bộ" },
       { href: "/workflow", icon: Workflow, label: "Tự Động Hóa (Workflow)" },
@@ -58,7 +61,9 @@ export const NAV_GROUPS = [
     links: [
       { href: "/referral", icon: Gift, label: "Giới Thiệu (Hoa Hồng)" },
       { href: "/gamification", icon: Trophy, label: "Đua Top & Thành Tích" },
-      { href: "/marketplace", icon: Store, label: "Chợ Liên Kết (B2B)" }
+      { href: "/marketplace", icon: Store, label: "Chợ Liên Kết (B2B)" },
+      { href: "/auction", icon: Gavel, label: "Đấu Giá BĐS (VIP)" },
+      { href: "/resale", icon: RefreshCw, label: "Ký Gửi & Thứ Cấp" }
     ]
   },
   {
