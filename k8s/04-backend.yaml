@@ -1,0 +1,110 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: novacrm-backend-service
+  namespace: novacrm-prod
+  labels:
+    app: novacrm-backend
+spec:
+  type: ClusterIP
+  ports:
+    - port: 4000
+      targetPort: 4000
+      name: http-api
+  selector:
+    app: novacrm-backend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: novacrm-backend
+  namespace: novacrm-prod
+  labels:
+    app: novacrm-backend
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: novacrm-backend
+  template:
+    metadata:
+      labels:
+        app: novacrm-backend
+    spec:
+      containers:
+        - name: backend
+          image: ghcr.io/novacrm/backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 4000
+              name: http-api
+          envFrom:
+            - configMapRef:
+                name: novacrm-config
+            - secretRef:
+                name: novacrm-secrets
+          resources:
+            requests:
+              cpu: "300m"
+              memory: "512Mi"
+            limits:
+              cpu: "1500m"
+              memory: "1.5Gi"
+          livenessProbe:
+            httpGet:
+              path: /health/liveness
+              port: 4000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/readiness
+              port: 4000
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: novacrm-backend-hpa
+  namespace: novacrm-prod
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: novacrm-backend
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: novacrm-backend-pdb
+  namespace: novacrm-prod
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: novacrm-backend

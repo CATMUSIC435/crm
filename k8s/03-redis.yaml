@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: novacrm-redis-service
+  namespace: novacrm-prod
+  labels:
+    app: novacrm-redis
+spec:
+  ports:
+    - port: 6379
+      name: redis
+  selector:
+    app: novacrm-redis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: novacrm-redis
+  namespace: novacrm-prod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: novacrm-redis
+  template:
+    metadata:
+      labels:
+        app: novacrm-redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          command: ["redis-server", "--appendonly", "yes", "--maxmemory", "1024mb", "--maxmemory-policy", "allkeys-lru"]
+          ports:
+            - containerPort: 6379
+              name: redis
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          livenessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 5
+            periodSeconds: 5

@@ -10,9 +10,10 @@ import {
   MarketplaceListing, AgencyPartner,
   LeaderboardAgent, GamificationQuest, GamificationBadge, RewardItem,
   MortgageSimulation,
-  PortfolioProperty, PortfolioMilestone,
+  PortfolioProperty,
   IntegrationApp, WebhookItem, ApiKeyItem, ApiAuditLog
 } from '@/types';
+import { apiClient } from '@/lib/api-client';
 // Dummy Initial Data
 const INITIAL_CUSTOMERS: Customer[] = [
   { id: 'c1', code: 'KH-001', name: 'Nguyễn Văn Tuấn', phone: '0901234567', email: 'tuan.nguyen@investor.vn', rank: 'VVIP', revenue: 25000000000, assignedTo: 'Lê Hoàng Anh', status: 'Đã giao dịch', createdAt: '2023-01-15' },
@@ -3072,6 +3073,7 @@ interface AppState extends AppDatabase {
   updateBookingTicketStatus: (id: string, nextStatus: BookingTicket['status'], note?: string, actor?: string) => void;
   rejectBookingTicket: (id: string, reason?: string, actor?: string) => void;
   extendBookingSLA: (id: string, minutes: number, reason?: string) => void;
+  syncWithBackend: () => Promise<void>;
 
   // Actions for Contracts
   addContract: (contract: Omit<Contract, 'id' | 'code' | 'date'>) => void;
@@ -3768,6 +3770,196 @@ export const useStore = create<AppState>()(
         return { bookingTickets: updatedTickets };
       }),
 
+      syncWithBackend: async () => {
+        try {
+          const [
+            remoteProjects,
+            remoteUnits,
+            remoteCampaigns,
+            remoteVouchers,
+            remoteListings,
+            remoteQuests,
+            remoteBadges,
+            remoteSurveys,
+            remoteApps,
+          ] = await Promise.all([
+            apiClient.projects.getAll().catch(() => null),
+            apiClient.inventory.getAll().catch(() => null),
+            apiClient.marketing.getCampaigns().catch(() => null),
+            apiClient.loyalty.getVouchers().catch(() => null),
+            apiClient.marketplace.getListings().catch(() => null),
+            apiClient.gamification.getQuests().catch(() => null),
+            apiClient.gamification.getBadges().catch(() => null),
+            apiClient.surveys.getCampaigns().catch(() => null),
+            apiClient.integrations.getApps().catch(() => null),
+          ]);
+
+          set(() => {
+            const updates: any = {};
+
+            if (remoteProjects && Array.isArray(remoteProjects) && remoteProjects.length > 0) {
+              updates.projects = remoteProjects.map((p: any) => ({
+                id: p.id,
+                name: p.name,
+                location: p.location,
+                totalUnits: p.totalUnits || 1000,
+                soldUnits: p.actualRevenue ? Math.round(Number(p.actualRevenue) / 1e9) : 0,
+                status: p.status === 'OPENING' ? 'Đang mở bán' : (p.status === 'HANDED_OVER' ? 'Đã bàn giao' : 'Sắp mở bán'),
+                type: p.type || 'Căn hộ cao cấp',
+                revenue: Number(p.actualRevenue || 0),
+                developer: p.developer,
+                thumbnail: p.thumbnail,
+                targetRevenue: Number(p.targetRevenue || 0),
+                coordinates: p.latitude && p.longitude ? [p.latitude, p.longitude] : undefined,
+                aiAnalysis: p.aiAnalysis,
+              }));
+            }
+
+            if (remoteUnits && Array.isArray(remoteUnits) && remoteUnits.length > 0) {
+              updates.inventory = remoteUnits.map((u: any) => ({
+                id: u.id,
+                code: u.code,
+                projectId: u.projectId,
+                type: u.type,
+                price: Number(u.price),
+                area: u.area,
+                status: u.status === 'AVAILABLE' ? 'Trống' : (u.status === 'BOOKING' ? 'Booking' : (u.status === 'SOLD' ? 'Đã bán' : 'Đang khóa')),
+                tower: u.tower,
+                floor: u.floor,
+                bedrooms: u.bedrooms,
+                bathrooms: u.bathrooms,
+                direction: u.direction,
+                handoverStandard: u.handoverStandard,
+                holdingAgent: u.holdingAgentId,
+                bookingExpiresAt: u.bookingExpiresAt,
+              }));
+            }
+
+            if (remoteCampaigns && Array.isArray(remoteCampaigns) && remoteCampaigns.length > 0) {
+              updates.campaigns = remoteCampaigns.map((c: any) => ({
+                id: c.id,
+                name: c.name,
+                platform: c.platform,
+                status: c.status,
+                budget: c.budget,
+                spent: c.spent,
+                leads: c.leads,
+                clicks: c.clicks,
+                startDate: c.startDate,
+                endDate: c.endDate,
+                targetCPL: c.targetCPL,
+                routingRule: c.routingRule,
+                assignedTeam: c.assignedTeam,
+                projectId: c.projectId,
+              }));
+            }
+
+            if (remoteVouchers && Array.isArray(remoteVouchers) && remoteVouchers.length > 0) {
+              updates.vouchers = remoteVouchers.map((v: any) => ({
+                id: v.id,
+                title: v.title,
+                points: v.points,
+                iconName: v.iconName,
+                color: v.color,
+                category: v.category,
+                description: v.description,
+                expiryDate: v.expiryDate,
+                stock: v.stock,
+                terms: v.terms,
+              }));
+            }
+
+            if (remoteListings && Array.isArray(remoteListings) && remoteListings.length > 0) {
+              updates.marketplaceListings = remoteListings.map((m: any) => ({
+                id: m.id,
+                title: m.title,
+                price: m.priceFormatted || `${(m.price / 1e9).toFixed(1)} Tỷ`,
+                priceNumeric: m.price,
+                commSplit: m.commSplit,
+                f2Commission: m.f2Commission,
+                f2CommissionRate: m.f2CommissionRate,
+                type: m.type,
+                propertyCategory: m.propertyCategory,
+                location: m.location,
+                district: m.district,
+                ownerAgency: m.ownerAgency,
+                ownerAvatar: m.ownerAvatar,
+                image: m.image,
+                verified: m.verified,
+                exclusive: m.exclusive,
+                coBrokeringStatus: m.coBrokeringStatus,
+              }));
+            }
+
+            if (remoteQuests && Array.isArray(remoteQuests) && remoteQuests.length > 0) {
+              updates.gamificationQuests = remoteQuests.map((q: any) => ({
+                id: q.questId,
+                title: q.title,
+                desc: q.description,
+                current: q.current,
+                max: q.max,
+                exp: q.exp,
+                category: q.category,
+                rewardClaimed: q.rewardClaimed,
+                iconName: q.iconName,
+              }));
+            }
+
+            if (remoteBadges && Array.isArray(remoteBadges) && remoteBadges.length > 0) {
+              updates.gamificationBadges = remoteBadges.map((b: any) => ({
+                id: b.badgeId,
+                name: b.name,
+                desc: b.description,
+                category: b.category,
+                color: b.color,
+                unlocked: b.unlocked,
+                unlockedDate: b.unlockedDate,
+                bonusExp: b.bonusExp,
+                rarity: b.rarity,
+              }));
+            }
+
+            if (remoteSurveys && Array.isArray(remoteSurveys) && remoteSurveys.length > 0) {
+              updates.surveyCampaigns = remoteSurveys.map((s: any) => ({
+                id: s.id,
+                name: s.name,
+                trigger: s.trigger,
+                responses: s.responsesCount,
+                conversion: s.conversion,
+                status: s.status,
+                channel: s.channel,
+                targetAudience: s.targetAudience,
+                rewardPoints: s.rewardPoints,
+                csatScore: s.csatScore,
+                npsScore: s.npsScore,
+                formUrl: s.formUrl,
+              }));
+            }
+
+            if (remoteApps && Array.isArray(remoteApps) && remoteApps.length > 0) {
+              updates.integrationApps = remoteApps.map((a: any) => ({
+                id: a.id,
+                name: a.name,
+                category: a.category,
+                iconName: a.iconName,
+                desc: a.description,
+                connected: a.connected,
+                lastSync: a.lastSync,
+                requestCount24h: a.requestCount24h,
+                endpoint: a.endpoint,
+                apiKey: a.apiKeyMasked,
+                latencyMs: a.latencyMs,
+                provider: a.provider,
+              }));
+            }
+
+            return updates;
+          });
+        } catch {
+          // Graceful fallback
+        }
+      },
+
       updateContractStatus: (id, status) => set((state) => ({
         contracts: state.contracts.map(c => c.id === id ? { ...c, status } : c)
       })),
@@ -3895,7 +4087,7 @@ export const useStore = create<AppState>()(
         ]
       })),
 
-      requestDistributionRights: (listingId, agencyName, representative, note) => set((state) => ({
+      requestDistributionRights: (listingId, _agencyName, _representative, _note) => set((state) => ({
         marketplaceListings: state.marketplaceListings.map(l => 
           l.id === listingId ? { ...l, distributedByMe: true } : l
         )
@@ -3935,7 +4127,7 @@ export const useStore = create<AppState>()(
         };
       }),
 
-      sendKudos: (agentId, message) => set((state) => {
+      sendKudos: (agentId, _message) => set((state) => {
         const updatedAgents = state.gamificationAgents.map(ag =>
           ag.id === agentId ? { ...ag, exp: ag.exp + 100 } : ag
         );

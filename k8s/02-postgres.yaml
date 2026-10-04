@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: novacrm-postgres-service
+  namespace: novacrm-prod
+  labels:
+    app: novacrm-postgres
+spec:
+  ports:
+    - port: 5432
+      name: postgres
+  clusterIP: None
+  selector:
+    app: novacrm-postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: novacrm-postgres
+  namespace: novacrm-prod
+spec:
+  serviceName: "novacrm-postgres-service"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: novacrm-postgres
+  template:
+    metadata:
+      labels:
+        app: novacrm-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgis/postgis:16-3.4-alpine
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: novacrm-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: novacrm-secrets
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: novacrm-config
+                  key: DATABASE_NAME
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-d", "novacrm_db"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-d", "novacrm_db"]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 50Gi

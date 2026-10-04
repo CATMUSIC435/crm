@@ -747,7 +747,7 @@ export default function GISPage() {
 
       {/* 4. MODAL 1: Tra Cứu Quy Hoạch Đất Đai 1/500 */}
       {zoningModalOpen && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-3xl w-full border shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             
             {/* Modal Header */}
@@ -904,7 +904,7 @@ export default function GISPage() {
 
       {/* 5. MODAL 2: Đo Khoảng Cách & Lộ Trình Di Chuyển (Transit Routing) */}
       {transitModalOpen && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-2xl w-full border shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             
             {/* Modal Header */}

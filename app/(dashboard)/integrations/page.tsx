@@ -865,7 +865,7 @@ export default function IntegrationsPage() {
 
       {/* 1. MODAL 1: CẤU HÌNH & KIỂM TRA KẾT NỐI (PING TEST) */}
       {selectedAppForConfig && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full border shadow-2xl overflow-hidden flex flex-col">
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2.5">
@@ -968,7 +968,7 @@ export default function IntegrationsPage() {
 
       {/* 2. MODAL 2: TẠO MỚI API KEY DOANH NGHIỆP */}
       {showCreateKeyModal && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full border shadow-2xl overflow-hidden flex flex-col">
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">
@@ -1043,7 +1043,7 @@ export default function IntegrationsPage() {
 
       {/* 3. MODAL 3: CHI TIẾT GÓI TIN WEBHOOK PAYLOAD */}
       {selectedWebhookPayloadModal && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-xl w-full border shadow-2xl overflow-hidden flex flex-col">
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">
@@ -1125,7 +1125,7 @@ X-Nova-Signature: sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 
       {/* 4. MODAL 4: YÊU CẦU TÍCH HỢP HỆ THỐNG MỚI */}
       {showRequestIntegrationModal && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full border shadow-2xl overflow-hidden flex flex-col">
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">
@@ -1201,7 +1201,7 @@ X-Nova-Signature: sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 
       {/* 5. MODAL 5: CẤU HÌNH GẠCH NỢ TỰ ĐỘNG VIETQR IPN */}
       {showVietQrConfigModal && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full border shadow-2xl overflow-hidden flex flex-col">
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">

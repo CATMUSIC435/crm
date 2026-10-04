@@ -1420,8 +1420,14 @@ export default function ChatPage() {
 
       {/* MODAL 1: TẠO KÊNH THẢO LUẬN MỚI */}
       {showCreateChannelModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div 
+          onClick={() => setShowCreateChannelModal(false)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden"
+          >
             <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950">
               <div className="flex items-center gap-2">
                 <Hash className="h-5 w-5 text-indigo-600" />
@@ -1496,8 +1502,14 @@ export default function ChatPage() {
 
       {/* MODAL 2: ĐÍNH KÈM CĂN HỘ / SẢN PHẨM BĐS */}
       {showAttachListingModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[85vh]">
+        <div 
+          onClick={() => setShowAttachListingModal(false)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[85vh]"
+          >
             <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950">
               <div className="flex items-center gap-2">
                 <Building2 className="h-5 w-5 text-indigo-600" />
@@ -1564,8 +1576,14 @@ export default function ChatPage() {
 
       {/* MODAL 3: THƯ VIỆN MẪU TIN NHẮN CSKH */}
       {showQuickTemplatesModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[85vh]">
+        <div 
+          onClick={() => setShowQuickTemplatesModal(false)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[85vh]"
+          >
             <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-amber-500" />
@@ -1633,8 +1651,14 @@ export default function ChatPage() {
 
       {/* MODAL 4: GIAO VIỆC / TẠO TASK CRM TỪ ĐOẠN CHAT */}
       {showForwardTaskModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div 
+          onClick={() => setShowForwardTaskModal(false)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden"
+          >
             <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950">
               <div className="flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-indigo-600" />
@@ -1720,8 +1744,14 @@ export default function ChatPage() {
 
       {/* MODAL 5: HỒ SƠ KHÁCH HÀNG ZALO OA 360° ĐẦY ĐỦ */}
       {showCustomerDrawer && activeDM && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden max-h-[90vh] flex flex-col">
+        <div 
+          onClick={() => setShowCustomerDrawer(false)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden max-h-[90vh] flex flex-col"
+          >
             <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-gradient-to-r from-blue-900 to-indigo-950 text-white">
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10 border-2 border-white/50">
@@ -1797,8 +1827,14 @@ export default function ChatPage() {
 
       {/* MODAL 6: MOCK VIDEO CALL POPUP NÂNG CẤP */}
       {showVideoCall && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-in zoom-in-95 duration-200">
-          <div className="relative w-full max-w-4xl aspect-video bg-slate-950 rounded-2xl overflow-hidden shadow-2xl border border-slate-700 flex flex-col justify-between">
+        <div 
+          onClick={() => setShowVideoCall(false)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-in zoom-in-95 duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-4xl aspect-video bg-slate-950 rounded-2xl overflow-hidden shadow-2xl border border-slate-700 flex flex-col justify-between"
+          >
             
             {/* Top Bar Call */}
             <div className="relative z-10 flex justify-between items-center p-4 bg-gradient-to-b from-black/80 to-transparent">

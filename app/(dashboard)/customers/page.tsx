@@ -22,6 +22,13 @@ import {
 import Link from "next/link"
 import { useStore } from "@/store/useStore"
 import { Customer } from "@/types"
+import { ColumnDef } from "@tanstack/react-table"
+import { DataTable, DataTableColumnHeader } from "@/components/ui/data-table"
+import { useDataTable } from "@/hooks/table/use-data-table"
+import { useCustomersQuery } from "@/hooks/api/use-customers-query"
+import { useQueryClient } from "@tanstack/react-query"
+import { apiClient } from "@/lib/api-client"
+import { queryKeys } from "@/hooks/api/query-keys"
 
 function getBadgeVariant(rank: string) {
   switch (rank) {
@@ -62,6 +69,7 @@ function formatCurrency(amount: number) {
 }
 
 export default function CustomerListPage() {
+  const queryClient = useQueryClient()
   const { customers, addCustomer, makeCall } = useStore()
   
   // Filter States
@@ -70,6 +78,10 @@ export default function CustomerListPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [agentFilter, setAgentFilter] = useState('all')
   const [toastMsg, setToastMsg] = useState<string | null>(null)
+
+  // TanStack Query for background fresh cache & API optimization
+  const { data: remoteCustomers, isLoading } = useCustomersQuery({ rank: activeTab, search: searchTerm })
+  const customerList = remoteCustomers && remoteCustomers.length > 0 ? remoteCustomers : customers
   
   // Modal State
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false)
@@ -85,18 +97,18 @@ export default function CustomerListPage() {
 
   // List of distinct agents
   const agents = useMemo(() => {
-    return Array.from(new Set(customers.map(c => c.assignedTo).filter(Boolean)))
-  }, [customers])
+    return Array.from(new Set(customerList.map(c => c.assignedTo).filter(Boolean)))
+  }, [customerList])
 
   // Count by Rank
   const getCount = (rank: string) => {
-    if (rank === "Tất cả") return customers.length
-    return customers.filter(c => c.rank === rank).length
+    if (rank === "Tất cả") return customerList.length
+    return customerList.filter(c => c.rank === rank).length
   }
 
   // Filtered Customers
   const filteredCustomers = useMemo(() => {
-    return customers.filter(c => {
+    return customerList.filter(c => {
       // Tab Rank Filter
       if (activeTab !== 'Tất cả' && c.rank !== activeTab) return false
 
@@ -119,7 +131,7 @@ export default function CustomerListPage() {
 
       return true
     })
-  }, [customers, activeTab, searchTerm, statusFilter, agentFilter])
+  }, [customerList, activeTab, searchTerm, statusFilter, agentFilter])
 
   // Active filters check
   const hasActiveFilters = searchTerm.trim() !== '' || statusFilter !== 'all' || agentFilter !== 'all' || activeTab !== 'Tất cả'
@@ -171,14 +183,33 @@ export default function CustomerListPage() {
   }
 
   // Add Customer Submit
-  const handleCreateCustomer = (e: React.FormEvent) => {
+  const handleCreateCustomer = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newCustomer.name.trim() || !newCustomer.phone.trim()) return
 
+    const customerName = newCustomer.name.trim()
+    const customerPhone = newCustomer.phone.trim()
+    const customerEmail = newCustomer.email.trim() || `khach.${Date.now()}@novacrm.vn`
+
+    try {
+      await apiClient.request('/customers', {
+        method: 'POST',
+        body: JSON.stringify({
+          fullName: customerName,
+          phone: customerPhone,
+          email: customerEmail,
+          rank: newCustomer.rank === 'VVIP' ? 'DIAMOND_VVIP' : newCustomer.rank === 'VIP' ? 'PLATINUM' : 'GOLD',
+        }),
+      })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.customers.all })
+    } catch (err: any) {
+      console.warn('Backend API create customer fallback:', err?.message)
+    }
+
     addCustomer({
-      name: newCustomer.name.trim(),
-      phone: newCustomer.phone.trim(),
-      email: newCustomer.email.trim() || 'chua_co_email@domain.com',
+      name: customerName,
+      phone: customerPhone,
+      email: customerEmail,
       rank: newCustomer.rank,
       revenue: Number(newCustomer.revenue),
       assignedTo: newCustomer.assignedTo,
@@ -186,7 +217,7 @@ export default function CustomerListPage() {
     })
 
     setIsAddCustomerOpen(false)
-    setToastMsg(`Đã tạo thành công hồ sơ khách hàng "${newCustomer.name}"!`)
+    setToastMsg(`Đã tạo thành công hồ sơ khách hàng "${customerName}"!`)
     setNewCustomer({
       name: '',
       phone: '',
@@ -200,10 +231,122 @@ export default function CustomerListPage() {
   }
 
   // KPI Numbers
-  const totalRevenue = customers.reduce((sum, c) => sum + c.revenue, 0)
-  const vipCount = customers.filter(c => c.rank === 'VVIP' || c.rank === 'VIP').length
-  const transactedCount = customers.filter(c => c.status === 'Đã giao dịch').length
-  const activeCount = customers.filter(c => c.status !== 'Đã giao dịch').length
+  const totalRevenue = customerList.reduce((sum, c) => sum + c.revenue, 0)
+  const vipCount = customerList.filter(c => c.rank === 'VVIP' || c.rank === 'VIP').length
+  const transactedCount = customerList.filter(c => c.status === 'Đã giao dịch').length
+  const activeCount = customerList.filter(c => c.status !== 'Đã giao dịch').length
+
+  // TanStack Table Column Definitions
+  const columns = useMemo<ColumnDef<Customer>[]>(() => [
+    {
+      accessorKey: 'code',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Mã KH" />,
+      cell: ({ row }) => (
+        <span className="font-mono text-xs font-bold text-slate-500">
+          {row.original.code}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'name',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Khách Hàng" />,
+      cell: ({ row }) => {
+        const c = row.original;
+        return (
+          <div className="flex items-center gap-3">
+            <Avatar className="h-9 w-9">
+              <AvatarImage src={`https://i.pravatar.cc/150?u=${c.id}`} />
+              <AvatarFallback className="bg-indigo-100 text-indigo-700 text-xs font-bold">
+                {c.name.substring(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <Link href={`/customers/${c.id}`} className="font-bold text-slate-900 hover:text-indigo-600 hover:underline">
+                {c.name}
+              </Link>
+              <div className="text-[11px] text-muted-foreground">Gia nhập: {c.createdAt}</div>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      id: 'contact',
+      header: 'Liên Hệ',
+      cell: ({ row }) => {
+        const c = row.original;
+        return (
+          <div>
+            <div className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+              <Phone className="h-3 w-3 text-slate-400" /> {c.phone}
+            </div>
+            <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
+              <Mail className="h-3 w-3 text-slate-400" /> {c.email}
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'rank',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Phân Hạng" />,
+      cell: ({ row }) => getBadgeVariant(row.original.rank),
+    },
+    {
+      accessorKey: 'revenue',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Doanh Thu Tích Lũy" />,
+      cell: ({ row }) => (
+        <div className="font-bold text-xs text-indigo-700">
+          {row.original.revenue > 0 ? formatCurrency(row.original.revenue) : 'Chưa giao dịch'}
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'assignedTo',
+      header: 'Chuyên Viên Phụ Trách',
+      cell: ({ row }) => (
+        <div className="text-xs font-medium text-slate-700 flex items-center gap-1">
+          <Briefcase className="h-3 w-3 text-slate-400" /> {row.original.assignedTo}
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'status',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng Thái" />,
+      cell: ({ row }) => getStatusBadge(row.original.status),
+    },
+    {
+      id: 'actions',
+      header: () => <div className="text-right">Hành Động</div>,
+      cell: ({ row }) => {
+        const c = row.original;
+        return (
+          <div className="flex justify-end items-center gap-1.5">
+            <Button 
+              size="icon" 
+              variant="ghost" 
+              className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+              title="Gọi điện ngay"
+              onClick={() => handleQuickCall(c)}
+            >
+              <PhoneCall className="h-4 w-4" />
+            </Button>
+            <Link href={`/customers/${c.id}`}>
+              <Button size="sm" variant="outline" className="h-8 text-xs font-semibold hover:bg-indigo-50 hover:text-indigo-600">
+                <Eye className="h-3.5 w-3.5 mr-1" /> CRM 360°
+              </Button>
+            </Link>
+          </div>
+        );
+      },
+    },
+  ], []);
+
+  const { table } = useDataTable({
+    columns,
+    data: filteredCustomers,
+    initialPageSize: 10,
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -402,96 +545,13 @@ export default function CustomerListPage() {
         </CardContent>
       </Card>
 
-      {/* Customer Data Table */}
-      <Card className="shadow-sm">
-        <div className="overflow-x-auto w-full pb-2">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-slate-50/80">
-                <TableHead className="w-[100px]">Mã KH</TableHead>
-                <TableHead>Khách Hàng</TableHead>
-                <TableHead>Liên Hệ</TableHead>
-                <TableHead>Phân Hạng</TableHead>
-                <TableHead>Doanh Thu Tích Lũy</TableHead>
-                <TableHead>Chuyên Viên Phụ Trách</TableHead>
-                <TableHead>Trạng Thái</TableHead>
-                <TableHead className="text-right">Hành Động</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCustomers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
-                    Không tìm thấy khách hàng nào phù hợp với bộ lọc.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredCustomers.map((c) => (
-                  <TableRow key={c.id} className="hover:bg-slate-50/80">
-                    <TableCell className="font-mono text-xs font-bold text-slate-500">
-                      {c.code}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9">
-                          <AvatarImage src={`https://i.pravatar.cc/150?u=${c.id}`} />
-                          <AvatarFallback className="bg-indigo-100 text-indigo-700 text-xs font-bold">
-                            {c.name.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <Link href={`/customers/${c.id}`} className="font-bold text-slate-900 hover:text-indigo-600 hover:underline">
-                            {c.name}
-                          </Link>
-                          <div className="text-[11px] text-muted-foreground">Gia nhập: {c.createdAt}</div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
-                        <Phone className="h-3 w-3 text-slate-400" /> {c.phone}
-                      </div>
-                      <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
-                        <Mail className="h-3 w-3 text-slate-400" /> {c.email}
-                      </div>
-                    </TableCell>
-                    <TableCell>{getBadgeVariant(c.rank)}</TableCell>
-                    <TableCell>
-                      <div className="font-bold text-xs text-indigo-700">
-                        {c.revenue > 0 ? formatCurrency(c.revenue) : 'Chưa giao dịch'}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-xs font-medium text-slate-700 flex items-center gap-1">
-                        <Briefcase className="h-3 w-3 text-slate-400" /> {c.assignedTo}
-                      </div>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(c.status)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end items-center gap-1.5">
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                          title="Gọi điện ngay"
-                          onClick={() => handleQuickCall(c)}
-                        >
-                          <PhoneCall className="h-4 w-4" />
-                        </Button>
-                        <Link href={`/customers/${c.id}`}>
-                          <Button size="sm" variant="outline" className="h-8 text-xs font-semibold hover:bg-indigo-50 hover:text-indigo-600">
-                            <Eye className="h-3.5 w-3.5 mr-1" /> CRM 360°
-                          </Button>
-                        </Link>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </Card>
+      {/* Customer Data Table powered by TanStack Table & TanStack Query */}
+      <DataTable
+        table={table}
+        columns={columns}
+        isLoading={isLoading}
+        emptyMessage="Không tìm thấy khách hàng nào phù hợp với bộ lọc."
+      />
 
       {/* CREATE NEW CUSTOMER MODAL */}
       <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>

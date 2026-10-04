@@ -861,7 +861,7 @@ export default function DocumentAIPage() {
 
       {/* 6. MODAL 1: Cấu Hình & Tạo Hợp Đồng Tự Động */}
       {contractModalOpen && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full border shadow-2xl overflow-hidden flex flex-col text-slate-800 dark:text-slate-200">
             <div className="p-4 sm:p-5 border-b flex items-center justify-between bg-emerald-50/50 dark:bg-emerald-950/30">
               <div className="flex items-center gap-2">
@@ -961,7 +961,7 @@ export default function DocumentAIPage() {
 
       {/* 7. MODAL 2: Trích Xuất JSON Schema RESTful API */}
       {jsonModalOpen && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-slate-950 rounded-2xl max-w-2xl w-full border border-slate-800 shadow-2xl overflow-hidden flex flex-col text-slate-200">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900">
               <div className="flex items-center gap-2">

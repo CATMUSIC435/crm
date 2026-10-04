@@ -1,22 +1,63 @@
 "use client"
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Bell, Menu, X, LayoutDashboard, LogOut, User, Settings as SettingsIcon } from "lucide-react"
-import { NAV_GROUPS } from './sidebar' // Import config from sidebar to reuse
+import { Bell, Menu, X, LayoutDashboard, LogOut, User, Settings as SettingsIcon, ShieldAlert, Check } from "lucide-react"
+import { NAV_GROUPS, getFilteredNavGroups, ROLE_LABELS } from './sidebar' // Import config from sidebar to reuse
+import { apiClient } from "@/lib/api-client"
+import { useStore } from "@/store/useStore"
 
 export function Topbar() {
+  const router = useRouter()
+  const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isNotifOpen, setIsNotifOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
-  const pathname = usePathname()
+  const [currentUser, setCurrentUser] = useState<any>(null)
+
+  useEffect(() => {
+    const user = apiClient.getUser()
+    if (user) {
+      setCurrentUser(user)
+    } else {
+      setCurrentUser({
+        fullName: 'Lê Hoàng Anh',
+        role: 'SUPER_ADMIN',
+        email: 'admin@novacrm.com',
+      })
+    }
+    // Tự động đồng bộ dữ liệu từ Backend NestJS
+    useStore.getState().syncWithBackend()
+  }, [])
 
   const closeMenu = () => setIsMobileMenuOpen(false)
 
+  const handleLogout = () => {
+    apiClient.clearToken()
+    setIsProfileOpen(false)
+    router.push('/login')
+  }
+
+  const switchRole = (newRole: string) => {
+    const updated = {
+      ...(currentUser || {}),
+      role: newRole,
+    }
+    setCurrentUser(updated)
+    apiClient.setSession(
+      localStorage.getItem('nova_auth_token') || 'demo_token',
+      undefined,
+      updated
+    )
+    setIsProfileOpen(false)
+    // Tự động tải lại trang để proxy kiểm tra quyền mới ngay lập tức
+    window.location.reload()
+  }
+
   return (
     <>
-      <header className="flex h-16 items-center justify-between border-b bg-white px-4 lg:px-8 shadow-sm z-[999] relative">
+      <header className="flex h-16 items-center justify-between border-b bg-white px-4 lg:px-8 shadow-sm z-30 relative">
         <div className="flex items-center gap-4">
           {/* Hamburger Menu (Mobile Only) */}
           <button 
@@ -89,30 +130,82 @@ export function Topbar() {
               className="flex items-center gap-3 cursor-pointer outline-none hover:bg-slate-50 p-1.5 pr-2 rounded-full transition-colors"
             >
                <div className="hidden md:block text-right">
-                  <div className="text-sm font-bold text-slate-800">Lê Hoàng Anh</div>
-                  <div className="text-xs text-slate-500">Giám đốc (Super Admin)</div>
+                  <div className="text-sm font-bold text-slate-800">{currentUser?.fullName || 'Người Dùng'}</div>
+                  <div className="text-xs font-semibold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 inline-block">
+                    {currentUser?.role || 'SUPER_ADMIN'}
+                  </div>
                </div>
                <Avatar className="h-9 w-9 ring-2 ring-indigo-100 ring-offset-2">
                  <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-                 <AvatarFallback className="bg-indigo-600 text-white font-bold">AD</AvatarFallback>
+                 <AvatarFallback className="bg-indigo-600 text-white font-bold">
+                   {(currentUser?.fullName || 'NV').slice(0, 2).toUpperCase()}
+                 </AvatarFallback>
                </Avatar>
             </div>
 
             {isProfileOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
-                <div className="p-3 border-b border-slate-100 font-bold text-sm text-slate-800 bg-slate-50">
-                  Tài khoản của tôi
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-100 z-50">
+                <div className="p-3 border-b border-slate-100 bg-slate-50">
+                  <div className="font-bold text-sm text-slate-800">{currentUser?.fullName}</div>
+                  <div className="text-xs text-slate-500 truncate">{currentUser?.email}</div>
+                  <div className="mt-1.5 flex items-center gap-1.5">
+                    <span className="text-[11px] font-bold px-2 py-0.5 bg-indigo-600 text-white rounded-full">
+                      Vai trò: {currentUser?.role || 'SUPER_ADMIN'}
+                    </span>
+                  </div>
                 </div>
+
+                {/* Role Switcher for QA and RBAC Verification */}
+                <div className="p-2 border-b border-slate-100 bg-slate-50/50">
+                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1 flex items-center gap-1">
+                    <ShieldAlert className="h-3 w-3 text-amber-500" />
+                    Chuyển vai trò test RBAC:
+                  </div>
+                  <div className="grid grid-cols-2 gap-1 px-1">
+                    {[
+                      { r: 'SUPER_ADMIN', label: 'Super Admin' },
+                      { r: 'DIRECTOR', label: 'Giám Đốc' },
+                      { r: 'TEAM_LEADER', label: 'Trưởng Phòng' },
+                      { r: 'ACCOUNTANT', label: 'Kế Toán' },
+                      { r: 'AGENT', label: 'Môi Giới' },
+                    ].map((item) => (
+                      <button
+                        key={item.r}
+                        onClick={() => switchRole(item.r)}
+                        className={`text-xs px-2 py-1 rounded text-left flex items-center justify-between transition-colors ${
+                          currentUser?.role === item.r 
+                            ? 'bg-indigo-600 text-white font-bold' 
+                            : 'hover:bg-slate-200 text-slate-700'
+                        }`}
+                      >
+                        <span>{item.label}</span>
+                        {currentUser?.role === item.r && <Check className="h-3 w-3" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="p-1 flex flex-col">
-                  <button className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-md text-sm text-slate-700 w-full text-left font-medium">
+                  <Link 
+                    href="/agent" 
+                    onClick={() => setIsProfileOpen(false)}
+                    className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-md text-sm text-slate-700 w-full text-left font-medium"
+                  >
                     <User className="h-4 w-4 text-slate-500" /> Hồ sơ cá nhân
-                  </button>
-                  <button className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-md text-sm text-slate-700 w-full text-left font-medium">
+                  </Link>
+                  <Link 
+                    href="/settings" 
+                    onClick={() => setIsProfileOpen(false)}
+                    className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-md text-sm text-slate-700 w-full text-left font-medium"
+                  >
                     <SettingsIcon className="h-4 w-4 text-slate-500" /> Cài đặt hệ thống
-                  </button>
+                  </Link>
                 </div>
                 <div className="p-1 border-t border-slate-100">
-                  <button className="flex items-center gap-2 p-2 hover:bg-red-50 hover:text-red-700 rounded-md text-sm text-red-600 font-bold w-full text-left transition-colors">
+                  <button 
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 p-2 hover:bg-red-50 hover:text-red-700 rounded-md text-sm text-red-600 font-bold w-full text-left transition-colors"
+                  >
                     <LogOut className="h-4 w-4" /> Đăng xuất
                   </button>
                 </div>
@@ -150,7 +243,7 @@ export function Topbar() {
               {/* Mobile Links */}
               <nav className="flex-1 overflow-y-auto py-6 px-4">
                  <div className="space-y-8">
-                    {NAV_GROUPS.map((group, idx) => (
+                    {getFilteredNavGroups(currentUser?.role).map((group, idx) => (
                        <div key={idx}>
                           <h4 className="px-3 mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">
                              {group.title}

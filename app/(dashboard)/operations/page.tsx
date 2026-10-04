@@ -232,6 +232,86 @@ export default function PropertyOperationsPage() {
   const [tickets, setTickets] = useState<ResidentTicketItem[]>(INITIAL_TICKETS)
   const [searchQuery, setSearchQuery] = useState('')
   const [billStatusFilter, setBillStatusFilter] = useState<string>('ALL')
+  const [isLiveConnected, setIsLiveConnected] = useState(false)
+
+  React.useEffect(() => {
+    async function loadBackendOperations() {
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('nova_auth_token') || '' : ''
+        const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {}
+
+        // Fetch bills
+        const resBills = await fetch('/backend-api/operations/bills', { headers })
+        if (resBills.ok) {
+          const jsonBills = await resBills.json()
+          if (jsonBills.data && Array.isArray(jsonBills.data) && jsonBills.data.length > 0) {
+            setBills(jsonBills.data.map((b: any) => ({
+              id: b.billCode || b.id,
+              month: b.month,
+              propertyCode: b.propertyCode,
+              projectName: b.projectName,
+              residentName: b.residentName,
+              residentPhone: b.residentPhone || '0901234567',
+              managementFee: Number(b.managementFee) || 0,
+              parkingFee: Number(b.parkingFee) || 0,
+              utilitiesFee: Number(b.utilitiesFee) || 0,
+              totalAmount: Number(b.totalAmount) || 0,
+              status: b.status,
+              dueDate: b.dueDate,
+              paidDate: b.paidDate,
+              paymentMethod: b.paymentMethod,
+            })))
+            setIsLiveConnected(true)
+          }
+        }
+
+        // Fetch permits
+        const resPermits = await fetch('/backend-api/operations/permits', { headers })
+        if (resPermits.ok) {
+          const jsonPermits = await resPermits.json()
+          if (jsonPermits.data && Array.isArray(jsonPermits.data) && jsonPermits.data.length > 0) {
+            setFitouts(jsonPermits.data.map((p: any) => ({
+              id: p.id,
+              propertyCode: p.propertyCode,
+              residentName: p.residentName,
+              contractorName: p.contractorName,
+              contractorPhone: p.contractorPhone || '0988776655',
+              workersCount: p.workersCount || 1,
+              startDate: p.startDate,
+              endDate: p.endDate,
+              depositAmount: Number(p.depositAmount) || 0,
+              status: p.status,
+              depositRefunded: p.depositRefunded || false,
+              notes: p.notes || '',
+            })))
+          }
+        }
+
+        // Fetch bookings
+        const resBookings = await fetch('/backend-api/operations/amenities/bookings', { headers })
+        if (resBookings.ok) {
+          const jsonBookings = await resBookings.json()
+          if (jsonBookings.data && Array.isArray(jsonBookings.data) && jsonBookings.data.length > 0) {
+            setBookings(jsonBookings.data.map((bk: any) => ({
+              id: bk.id,
+              amenityType: bk.amenityType,
+              propertyCode: bk.propertyCode,
+              residentName: bk.residentName,
+              residentPhone: bk.residentPhone || '0901234567',
+              bookingDate: bk.bookingDate,
+              timeSlot: bk.timeSlot,
+              guestsCount: bk.guestsCount || 1,
+              fee: 0,
+              status: bk.status,
+            })))
+          }
+        }
+      } catch (e) {
+        // Fallback silently
+      }
+    }
+    loadBackendOperations()
+  }, [])
 
   // Modals States (5 Modals)
   const [showCreateBillModal, setShowCreateBillModal] = useState(false)
@@ -444,6 +524,12 @@ export default function PropertyOperationsPage() {
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
               Ban Quản Lý Savills / CBRE Active 24/7 (SLA 99.8%)
             </Badge>
+            {isLiveConnected && (
+              <Badge className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                Live PostgreSQL Engine
+              </Badge>
+            )}
           </div>
           <h1 className="text-2xl md:text-3xl font-black tracking-tight flex items-center gap-3">
             <Building2 className="h-8 w-8 text-blue-400" />

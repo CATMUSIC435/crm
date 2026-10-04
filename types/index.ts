@@ -706,6 +706,7 @@ export interface MortgageSimulation {
   dtiRatio: number;
   totalInterest: number;
   firstMonthlyPayment: number;
+  notes?: string;
   createdAt: string;
 }
 

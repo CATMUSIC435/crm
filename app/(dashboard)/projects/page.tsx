@@ -24,6 +24,10 @@ import {
 import Link from "next/link"
 import { useStore } from "@/store/useStore"
 import { Project } from "@/types"
+import { useProjectsQuery } from "@/hooks/api/use-projects-query"
+import { useQueryClient } from "@tanstack/react-query"
+import { apiClient } from "@/lib/api-client"
+import { queryKeys } from "@/hooks/api/query-keys"
 
 function formatCurrency(amount: number | undefined) {
   if (!amount) return '0 VNĐ'
@@ -50,7 +54,11 @@ function getStatusBadge(status: string) {
 }
 
 export default function ProjectsPage() {
+  const queryClient = useQueryClient()
   const { projects, addProject } = useStore()
+  const { data: remoteProjects } = useProjectsQuery()
+  const projectList = remoteProjects && remoteProjects.length > 0 ? remoteProjects : projects
+
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [developerFilter, setDeveloperFilter] = useState('all')
@@ -85,7 +93,7 @@ export default function ProjectsPage() {
 
   // Filtered Projects
   const filteredProjects = useMemo(() => {
-    return projects.filter(p => {
+    return projectList.filter(p => {
       const term = searchTerm.toLowerCase().trim()
       const matchesSearch = !term || 
         p.name.toLowerCase().includes(term) || 
@@ -109,14 +117,14 @@ export default function ProjectsPage() {
 
       return matchesSearch && matchesStatus && matchesDeveloper && matchesType
     })
-  }, [projects, searchTerm, statusFilter, developerFilter, typeFilter])
+  }, [projectList, searchTerm, statusFilter, developerFilter, typeFilter])
 
   // KPI Calculations
-  const totalProjects = projects.length
-  const sellingCount = projects.filter(p => p.status === 'Đang mở bán').length
-  const upcomingCount = projects.filter(p => p.status === 'Sắp mở bán').length
-  const doneCount = projects.filter(p => p.status === 'Đã bàn giao').length
-  const totalTargetRevenue = projects.reduce((sum, p) => sum + (p.targetRevenue || p.revenue || 0), 0)
+  const totalProjects = projectList.length
+  const sellingCount = projectList.filter(p => p.status === 'Đang mở bán').length
+  const upcomingCount = projectList.filter(p => p.status === 'Sắp mở bán').length
+  const doneCount = projectList.filter(p => p.status === 'Đã bàn giao').length
+  const totalTargetRevenue = projectList.reduce((sum, p) => sum + (p.targetRevenue || p.revenue || 0), 0)
 
   // Export CSV
   const handleExportCSV = () => {
@@ -149,13 +157,34 @@ export default function ProjectsPage() {
   }
 
   // Create Project Submit
-  const handleCreateProject = (e: React.FormEvent) => {
+  const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newProject.name.trim() || !newProject.location.trim()) return
 
+    const projectName = newProject.name.trim()
+    const projectLocation = newProject.location.trim()
+
+    try {
+      await apiClient.request('/projects', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: projectName,
+          code: `DA-${Date.now().toString().slice(-4)}`,
+          location: projectLocation,
+          developer: newProject.developer || 'Novaland',
+          type: newProject.type || 'Căn hộ cao cấp',
+          totalUnits: Number(newProject.totalUnits) || 1000,
+          targetRevenue: Number(newProject.targetRevenue) || 5000000000000,
+        }),
+      })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.projects.all })
+    } catch (err: any) {
+      console.warn('Backend API create project fallback:', err?.message)
+    }
+
     addProject({
-      name: newProject.name.trim(),
-      location: newProject.location.trim(),
+      name: projectName,
+      location: projectLocation,
       developer: newProject.developer,
       type: newProject.type,
       totalUnits: Number(newProject.totalUnits),
@@ -169,7 +198,7 @@ export default function ProjectsPage() {
     })
 
     setIsAddProjectOpen(false)
-    setToastMsg(`Đã khởi tạo thành công đại dự án "${newProject.name}"!`)
+    setToastMsg(`Đã khởi tạo thành công đại dự án "${projectName}"!`)
     setNewProject({
       name: '',
       location: '',

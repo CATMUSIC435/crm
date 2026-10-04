@@ -1095,8 +1095,14 @@ export default function ReferralPage() {
 
       {/* ================= MODAL 1: GIỚI THIỆU KHÁCH HÀNG MỚI ================= */}
       {showAddLeadModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden">
+        <div 
+          onClick={() => setShowAddLeadModal(false)}
+          className="fixed inset-0 z-[1000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden"
+          >
             <div className="bg-slate-900 text-white p-6 flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-bold flex items-center gap-2">
@@ -1224,8 +1230,14 @@ export default function ReferralPage() {
 
       {/* ================= MODAL 2: YÊU CẦU RÚT TIỀN HOA HỒNG ================= */}
       {showWithdrawModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden">
+        <div 
+          onClick={() => setShowWithdrawModal(false)}
+          className="fixed inset-0 z-[1000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden"
+          >
             <div className="bg-slate-900 text-white p-6 flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-bold flex items-center gap-2">
@@ -1348,8 +1360,14 @@ export default function ReferralPage() {
 
       {/* ================= MODAL 3: CHI TIẾT DEAL BĐS ================= */}
       {selectedDealModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden">
+        <div 
+          onClick={() => setSelectedDealModal(null)}
+          className="fixed inset-0 z-[1000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden"
+          >
             <div className="bg-slate-900 text-white p-6 flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-bold flex items-center gap-2">
@@ -1437,8 +1455,14 @@ export default function ReferralPage() {
 
       {/* ================= MODAL 4: BIÊN LAI ỦY NHIỆM CHI UNC ================= */}
       {selectedPayoutReceipt && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden text-slate-800">
+        <div 
+          onClick={() => setSelectedPayoutReceipt(null)}
+          className="fixed inset-0 z-[1000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden text-slate-800"
+          >
             <div className="p-6 text-center space-y-4">
               <div className="h-12 w-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
                 <CheckCheck className="h-6 w-6" />

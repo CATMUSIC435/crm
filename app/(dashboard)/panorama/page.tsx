@@ -833,7 +833,7 @@ export default function PanoramaPage() {
 
       {/* 4. MODAL 1: Đặt Cọc Giữ Chỗ Nhanh (Instant Booking) */}
       {bookingModalOpen && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden flex flex-col text-slate-200">
             <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
               <div className="flex items-center gap-2">
@@ -942,7 +942,7 @@ export default function PanoramaPage() {
 
       {/* 5. MODAL 2: Chia Sẻ VR Tour (QR Code & Social Link) */}
       {shareModalOpen && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden flex flex-col text-slate-200">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
               <div className="flex items-center gap-2">
@@ -1021,7 +1021,7 @@ export default function PanoramaPage() {
 
       {/* 6. MODAL 3: Chi Tiết Vật Liệu Bàn Giao (Spec Sheet) */}
       {specModalOpen && selectedSpec && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden flex flex-col text-slate-200">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
               <div className="flex items-center gap-2">
@@ -1077,7 +1077,7 @@ export default function PanoramaPage() {
 
       {/* 7. MODAL 4: Video Call Tư Vấn Trực Tiếp 1-1 (Co-Browsing) */}
       {videoCallModalOpen && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in-50">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col text-slate-200">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
               <div className="flex items-center gap-2">
@@ -1152,7 +1152,7 @@ export default function PanoramaPage() {
 
       {/* 8. MODAL 5: Chi Tiết Phân Khu Sa Bàn Số 3D */}
       {selectedZoneInfo && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden flex flex-col text-slate-200">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
               <div className="flex items-center gap-2">

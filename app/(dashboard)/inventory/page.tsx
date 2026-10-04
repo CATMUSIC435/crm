@@ -25,6 +25,8 @@ import {
 } from "lucide-react"
 import { useStore } from "@/store/useStore"
 import { InventoryItem } from "@/types"
+import { useInventoryQuery } from "@/hooks/api/use-inventory-query"
+import { apiClient } from "@/lib/api-client"
 
 function getStatusBadge(status: string) {
   switch (status) {
@@ -60,6 +62,8 @@ function formatCurrency(amount: number) {
 
 export default function InventoryPage() {
   const { inventory, projects, customers, updateInventoryStatus, addInventoryItem } = useStore()
+  const { data: remoteInventory } = useInventoryQuery()
+  const inventoryList = remoteInventory && remoteInventory.length > 0 ? remoteInventory : inventory
   
   // Filter States
   const [projectFilter, setProjectFilter] = useState('all')
@@ -121,7 +125,7 @@ export default function InventoryPage() {
 
   // Filtered Inventory
   const filteredInventory = useMemo(() => {
-    return inventory.filter(item => {
+    return inventoryList.filter(item => {
       // Project Filter
       if (projectFilter !== 'all' && item.projectId !== projectFilter) return false
       
@@ -171,7 +175,7 @@ export default function InventoryPage() {
 
       return true
     })
-  }, [inventory, projectFilter, statusFilter, typeFilter, bedroomFilter, priceRangeFilter, searchCode])
+  }, [inventoryList, projectFilter, statusFilter, typeFilter, bedroomFilter, priceRangeFilter, searchCode])
 
   // KPI Calculations
   const totalValueRemaining = filteredInventory
@@ -224,6 +228,8 @@ export default function InventoryPage() {
 
   const handleToggleLock = (item: InventoryItem) => {
     const newStatus = item.status === 'Đang khóa' ? 'Trống' : 'Đang khóa'
+    const apiStatus = newStatus === 'Đang khóa' ? 'LOCKED' : 'AVAILABLE'
+    apiClient.inventory.batchLock([item.id], apiStatus).catch(err => console.warn('BatchLock sync error:', err?.message))
     updateInventoryStatus(item.id, newStatus)
     setSelectedItem({ ...item, status: newStatus })
     setActionSuccess(`Đã cập nhật trạng thái căn ${item.code} sang "${newStatus}"!`)
@@ -233,6 +239,7 @@ export default function InventoryPage() {
   // Batch Lock / Release
   const handleBatchLock = () => {
     if (selectedUnitIds.length === 0) return
+    apiClient.inventory.batchLock(selectedUnitIds, 'LOCKED').catch(err => console.warn('BatchLock sync error:', err?.message))
     selectedUnitIds.forEach(id => updateInventoryStatus(id, 'Đang khóa'))
     setActionSuccess(`Đã khóa thành công ${selectedUnitIds.length} căn hộ được chọn!`)
     setSelectedUnitIds([])
@@ -241,6 +248,7 @@ export default function InventoryPage() {
 
   const handleBatchRelease = () => {
     if (selectedUnitIds.length === 0) return
+    apiClient.inventory.batchLock(selectedUnitIds, 'AVAILABLE').catch(err => console.warn('BatchRelease sync error:', err?.message))
     selectedUnitIds.forEach(id => updateInventoryStatus(id, 'Trống'))
     setActionSuccess(`Đã mở bán lại ${selectedUnitIds.length} căn hộ về trạng thái Trống!`)
     setSelectedUnitIds([])

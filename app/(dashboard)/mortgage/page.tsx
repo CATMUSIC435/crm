@@ -395,8 +395,28 @@ export default function MortgagePage() {
       monthlyIncome,
       dtiRatio: Number(dtiRatio),
       totalInterest: totalInterestPaid,
-      firstMonthlyPayment: firstPayingMonthPayment
+      firstMonthlyPayment: firstPayingMonthPayment,
+      notes: customPlanNote
     })
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('nova_auth_token') || '' : ''
+    fetch('/backend-api/mortgage/save', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        customerId: selectedCustomerIdForSave,
+        propertyPrice: propertyValue,
+        loanPercent,
+        loanTermMonths: loanTermYears * 12,
+        annualInterestRate: selectedBank.promoRate || selectedBank.postPromoRate,
+        gracePeriodMonths: graceMonths,
+        monthlyIncome,
+        calculationMethod: repaymentMethod === 'reducing' ? 'DECREASING' : 'ANNUITY'
+      })
+    }).catch(() => {})
 
     setExportModalOpen(false)
     showToast(`Đã lưu phương án tài chính cho khách hàng ${customer ? customer.name : 'VIP'}!`)
@@ -1145,6 +1165,11 @@ Dự kiến bàn giao quý 4/2026, hỗ trợ hồ sơ thủ tục phê duyệt 
                             <span>Ngân hàng: <b>{sim.bankName}</b></span>
                             <span>Trả tháng: <b>{formatVND(sim.firstMonthlyPayment)}</b></span>
                           </div>
+                          {sim.notes && (
+                            <div className="text-[11px] text-purple-700 dark:text-purple-300 font-medium">
+                              📝 {sim.notes}
+                            </div>
+                          )}
                           <div className="text-[10px] text-slate-400">
                             Ngày tạo: {sim.createdAt}
                           </div>
@@ -1194,8 +1219,14 @@ Dự kiến bàn giao quý 4/2026, hỗ trợ hồ sơ thủ tục phê duyệt 
 
       {/* 4. MODAL 1: BẢNG KHẤU HAO CHI TIẾT TOÀN BỘ CHU KỲ (360 THÁNG) */}
       {showFullAmortizationModal && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-4xl w-full border shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div 
+          onClick={() => setShowFullAmortizationModal(false)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in-50"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 rounded-2xl max-w-4xl w-full border shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+          >
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">
                 <FileSpreadsheet className="h-5 w-5 text-indigo-600" />
@@ -1290,8 +1321,14 @@ Dự kiến bàn giao quý 4/2026, hỗ trợ hồ sơ thủ tục phê duyệt 
 
       {/* 5. MODAL 2: BẢNG SO SÁNH CHUYÊN SÂU 4 NGÂN HÀNG ĐỐI TÁC */}
       {showBankCompareModal && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-4xl w-full border shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div 
+          onClick={() => setShowBankCompareModal(false)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in-50"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 rounded-2xl max-w-4xl w-full border shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+          >
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">
                 <Landmark className="h-5 w-5 text-indigo-600" />
@@ -1437,8 +1474,14 @@ Dự kiến bàn giao quý 4/2026, hỗ trợ hồ sơ thủ tục phê duyệt 
 
       {/* 6. MODAL 3: MÔ PHỎNG TRẢ NỢ TRƯỚC HẠN & PHÍ PHẠT (PREPAYMENT SIMULATOR) */}
       {showPrepaymentModal && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-xl w-full border shadow-2xl overflow-hidden flex flex-col">
+        <div 
+          onClick={() => setShowPrepaymentModal(false)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in-50"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 rounded-2xl max-w-xl w-full border shadow-2xl overflow-hidden flex flex-col"
+          >
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">
                 <PiggyBank className="h-5 w-5 text-amber-600" />
@@ -1532,8 +1575,14 @@ Dự kiến bàn giao quý 4/2026, hỗ trợ hồ sơ thủ tục phê duyệt 
 
       {/* 7. MODAL 4: LƯU & XUẤT BÁO CÁO KẾ HOẠCH TÀI CHÍNH (PDF) */}
       {exportModalOpen && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full border shadow-2xl overflow-hidden flex flex-col text-slate-800 dark:text-slate-200">
+        <div 
+          onClick={() => setExportModalOpen(false)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in-50"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full border shadow-2xl overflow-hidden flex flex-col text-slate-800 dark:text-slate-200"
+          >
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">
                 <FileDown className="h-5 w-5 text-indigo-600" />
@@ -1615,8 +1664,14 @@ Dự kiến bàn giao quý 4/2026, hỗ trợ hồ sơ thủ tục phê duyệt 
 
       {/* 8. MODAL 5: GỬI PHƯƠNG ÁN QUA ZALO VIP (1-CHẠM) */}
       {shareModalOpen && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full border shadow-2xl overflow-hidden flex flex-col text-slate-800 dark:text-slate-200">
+        <div 
+          onClick={() => setShareModalOpen(false)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in-50"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full border shadow-2xl overflow-hidden flex flex-col text-slate-800 dark:text-slate-200"
+          >
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">
                 <Share2 className="h-5 w-5 text-indigo-600" />

@@ -18,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { useStore } from "@/store/useStore"
 import Link from 'next/link'
+import { apiClient } from "@/lib/api-client"
 
 function formatCurrency(amount: number) {
   if (amount >= 1e9) {
@@ -71,15 +72,29 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
   const remainingAmount = contract.value - paidAmount
 
   // Handle Mark Installment Paid
-  const handlePayInstallment = (installmentNumber: number, milestoneName: string) => {
+  const handlePayInstallment = async (installmentNumber: number, milestoneName: string) => {
     recordContractPayment(contract.id, installmentNumber, undefined, `INV-MANUAL-${installmentNumber}0${Date.now().toString().slice(-3)}`)
     showToast(`✅ Đã xác nhận thu thành công Đợt ${installmentNumber} (${milestoneName})!`)
+
+    const installmentObj = contract.paymentSchedule?.find(s => s.installment === installmentNumber)
+    const amount = installmentObj?.amount || 100000000
+    try {
+      await apiClient.contracts.recordPayment(contract.id, amount)
+    } catch (e) {
+      console.warn('API error recording contract payment, fallback to local store:', e)
+    }
   }
 
   // Handle Sign/Approve Contract
-  const handleApproveContract = () => {
+  const handleApproveContract = async () => {
     updateContractStatus(contract.id, 'Đã ký')
     showToast(`🎉 Hợp đồng ${contract.code} đã được phê duyệt và chính thức có hiệu lực pháp lý!`)
+
+    try {
+      await apiClient.contracts.eSign(contract.id, 'Trần Văn Sếp (Tổng Giám Đốc)')
+    } catch (e) {
+      console.warn('API error signing contract, fallback to local store:', e)
+    }
   }
 
   // Handle Send Email
@@ -608,7 +623,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
       {/* MODAL 1: GỬI EMAIL THÔNG BÁO CHO KHÁCH HÀNG              */}
       {/* ========================================================= */}
       <Dialog open={isEmailModalOpen} onOpenChange={setIsEmailModalOpen}>
-        <DialogContent className="sm:max-w-md p-6">
+        <DialogContent className="sm:max-w-md p-6 z-[1000]">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold flex items-center gap-2 text-blue-600">
               <Mail className="h-5 w-5" />
@@ -653,7 +668,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
       {/* MODAL 2: TẢI LÊN TÀI LIỆU MỚI                            */}
       {/* ========================================================= */}
       <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
-        <DialogContent className="sm:max-w-md p-6">
+        <DialogContent className="sm:max-w-md p-6 z-[1000]">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold flex items-center gap-2 text-blue-600">
               <Upload className="h-5 w-5" />

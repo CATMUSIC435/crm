@@ -1035,8 +1035,14 @@ export default function LoyaltyPage() {
 
       {/* ================= MODAL 1: GIẢ LẬP TÍCH ĐIỂM GIAO DỊCH BĐS ================= */}
       {showEarnModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden">
+        <div 
+          onClick={() => setShowEarnModal(false)}
+          className="fixed inset-0 z-[1000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden"
+          >
             <div className="bg-slate-900 text-white p-6 flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-bold flex items-center gap-2">
@@ -1157,8 +1163,14 @@ export default function LoyaltyPage() {
 
       {/* ================= MODAL 2: THÊM VOUCHER MỚI ================= */}
       {showAddVoucherModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden">
+        <div 
+          onClick={() => setShowAddVoucherModal(false)}
+          className="fixed inset-0 z-[1000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden"
+          >
             <div className="bg-slate-900 text-white p-6 flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-bold flex items-center gap-2">
@@ -1282,8 +1294,14 @@ export default function LoyaltyPage() {
 
       {/* ================= MODAL 3: DIGITAL VIP PASS & QR CODE MODAL ================= */}
       {showCardDetailModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-slate-900 text-white rounded-3xl max-w-sm w-full shadow-2xl border border-slate-700 overflow-hidden relative">
+        <div 
+          onClick={() => setShowCardDetailModal(false)}
+          className="fixed inset-0 z-[1000] bg-black/75 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-slate-900 text-white rounded-3xl max-w-sm w-full shadow-2xl border border-slate-700 overflow-hidden relative"
+          >
             <div className="p-6 text-center space-y-4">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-1.5 text-xs text-amber-400 font-bold uppercase tracking-widest">
@@ -1344,8 +1362,14 @@ export default function LoyaltyPage() {
 
       {/* ================= MODAL 4: POPUP ĐỔI VOUCHER THÀNH CÔNG ================= */}
       {redeemedVoucherPopup && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden text-center p-6 space-y-4">
+        <div 
+          onClick={() => setRedeemedVoucherPopup(null)}
+          className="fixed inset-0 z-[1000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden text-center p-6 space-y-4"
+          >
             <div className="h-14 w-14 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-600 ring-8 ring-emerald-50">
               <CheckCheck className="h-8 w-8" />
             </div>
@@ -1395,8 +1419,14 @@ export default function LoyaltyPage() {
 
       {/* ================= MODAL 5: POPUP MỞ MÃ QR TRONG VÍ ================= */}
       {activeWalletVoucher && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-sm w-full shadow-2xl border border-slate-200 overflow-hidden text-center p-6 space-y-4">
+        <div 
+          onClick={() => setActiveWalletVoucher(null)}
+          className="fixed inset-0 z-[1000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-sm w-full shadow-2xl border border-slate-200 overflow-hidden text-center p-6 space-y-4"
+          >
             <div className="flex justify-between items-center border-b pb-3">
               <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">E-Voucher Kích Hoạt</span>
               <button onClick={() => setActiveWalletVoucher(null)} className="text-slate-400 hover:text-slate-800">✕</button>

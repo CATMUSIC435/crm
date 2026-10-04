@@ -249,6 +249,84 @@ export default function PropertyHandoverPage() {
     setTimeout(() => setToastMsg(null), 3500)
   }
 
+  // Live Backend Integration
+  const [isLiveConnected, setIsLiveConnected] = useState(false)
+
+  React.useEffect(() => {
+    async function loadBackendHandovers() {
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('nova_auth_token') || '' : ''
+        const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {}
+        const res = await fetch('/backend-api/handover/tickets', { headers })
+        if (res.ok) {
+          const json = await res.json()
+          if (json.data && Array.isArray(json.data) && json.data.length > 0) {
+            const mappedHandovers: HandoverTicket[] = json.data.map((item: any) => ({
+              id: item.code || item.id,
+              contractId: item.contractId || 'HD-NEW',
+              propertyCode: item.propertyCode,
+              projectId: item.projectId || 'p1',
+              projectName: item.projectName,
+              customerId: item.customerId || 'c1',
+              customerName: item.customerName,
+              customerPhone: item.customerPhone || '0901234567',
+              customerEmail: item.customerEmail || 'khachhang@novacrm.com',
+              propertyType: item.propertyType,
+              area: Number(item.area) || 100,
+              scheduledDate: item.scheduledDate,
+              scheduledTime: item.scheduledTime || '09:00 AM',
+              assignedEngineer: item.assignedEngineer || 'KS. Ban QLDA',
+              status: item.status,
+              electricMeterIndex: item.electricMeterIndex ? Number(item.electricMeterIndex) : 0,
+              waterMeterIndex: item.waterMeterIndex ? Number(item.waterMeterIndex) : 0,
+              keysHandedOverCount: item.keysHandedOverCount || 0,
+              accessCardsCount: item.accessCardsCount || 0,
+              signedDate: item.signedDate,
+              signedByCustomer: item.signedByCustomer,
+              signedByStaff: item.signedByStaff,
+              warrantyExpiryDate: item.warrantyExpiryDate,
+              pinkBookStage: item.pinkBookStage,
+              pinkBookNumber: item.pinkBookNumber,
+              defectsCount: item.defectsCount || (item.defects ? item.defects.length : 0),
+              notes: item.notes,
+            }))
+            setHandovers(mappedHandovers)
+
+            // Extract defects if available
+            const backendDefects: SnaggingDefectItem[] = []
+            json.data.forEach((ticket: any) => {
+              if (ticket.defects && Array.isArray(ticket.defects)) {
+                ticket.defects.forEach((d: any) => {
+                  backendDefects.push({
+                    id: d.id,
+                    handoverId: ticket.code || ticket.id,
+                    propertyCode: d.propertyCode,
+                    location: d.location,
+                    category: d.category,
+                    description: d.description,
+                    severity: d.severity,
+                    contractor: d.contractor,
+                    status: d.status,
+                    reportedDate: d.reportedDate,
+                    targetResolutionDate: d.resolvedDate || '2026-08-01',
+                    resolvedDate: d.resolvedDate,
+                  })
+                })
+              }
+            })
+            if (backendDefects.length > 0) {
+              setDefects(backendDefects)
+            }
+            setIsLiveConnected(true)
+          }
+        }
+      } catch (err) {
+        // Fallback silently
+      }
+    }
+    loadBackendHandovers()
+  }, [])
+
   // Filtered Handovers
   const filteredHandovers = handovers.filter(h => {
     const matchSearch = h.propertyCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -278,6 +356,23 @@ export default function PropertyHandoverPage() {
     }))
     setShowAppointmentModal(false)
     showToast(`Đã thiết lập lịch hẹn bàn giao thành công cho căn [${appPropertyCode}] vào ngày ${appDate}!`)
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('nova_auth_token') || '' : ''
+    fetch('/backend-api/handover/tickets', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        propertyCode: appPropertyCode,
+        customerName: appCustomerName,
+        scheduledDate: appDate,
+        scheduledTime: appTime,
+        assignedEngineer: appEngineer,
+        notes: appNotes,
+      })
+    }).catch(() => {})
   }
 
   // Submit Modal 2: Báo Lỗi Snagging
@@ -304,6 +399,24 @@ export default function PropertyHandoverPage() {
     setHandovers(prev => prev.map(h => h.propertyCode === defectProperty ? { ...h, status: 'co_loi_can_sua', defectsCount: h.defectsCount + 1 } : h))
     setShowAddDefectModal(false)
     showToast(`Đã ghi nhận lỗi khiếm khuyết [${newDefect.id}] và phân công cho tổng thầu ${defectContractor}!`)
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('nova_auth_token') || '' : ''
+    fetch('/backend-api/handover/defects', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        propertyCode: defectProperty,
+        location: defectLocation,
+        category: defectCategory,
+        description: defectDesc,
+        severity: defectSeverity,
+        contractor: defectContractor,
+        targetResolutionDate: targetDate.toISOString().slice(0, 10),
+      })
+    }).catch(() => {})
   }
 
   // Action: Đánh dấu lỗi đã khắc phục
@@ -329,6 +442,19 @@ export default function PropertyHandoverPage() {
       }
       return h
     }))
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('nova_auth_token') || '' : ''
+    fetch(`/backend-api/handover/tickets/${id}/sign-off`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        signedDate: new Date().toISOString().slice(0, 10),
+      })
+    }).catch(() => {})
+
     setSelectedHandoverForSign(null)
     showToast(`Biên bản bàn giao căn hộ [${selectedHandoverForSign.propertyCode}] đã được ký số và đóng dấu pháp lý thành công!`)
   }
@@ -384,6 +510,12 @@ export default function PropertyHandoverPage() {
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
               Chuẩn Nghiệm Thu Quốc Tế ISO 9001
             </Badge>
+            {isLiveConnected && (
+              <Badge className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                Live PostgreSQL Engine
+              </Badge>
+            )}
           </div>
           <h1 className="text-2xl md:text-3xl font-black tracking-tight flex items-center gap-3">
             <KeyRound className="h-8 w-8 text-teal-400" />
@@ -1041,7 +1173,7 @@ export default function PropertyHandoverPage() {
 
       {/* MODAL 1: Lập Lịch Hẹn Bàn Giao */}
       <Dialog open={showAppointmentModal} onOpenChange={setShowAppointmentModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md z-[1000]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-teal-950">
               <Calendar className="h-5 w-5 text-teal-600" />
@@ -1131,7 +1263,7 @@ export default function PropertyHandoverPage() {
 
       {/* MODAL 2: Báo Lỗi Nghiệm Thu Snagging */}
       <Dialog open={showAddDefectModal} onOpenChange={setShowAddDefectModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md z-[1000]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-amber-950">
               <Wrench className="h-5 w-5 text-amber-600" />
@@ -1238,7 +1370,7 @@ export default function PropertyHandoverPage() {
 
       {/* MODAL 3: Ký Số Biên Bản Bàn Giao A4 */}
       <Dialog open={!!selectedHandoverForSign} onOpenChange={() => setSelectedHandoverForSign(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto z-[1000]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-teal-950">
               <FileSignature className="h-5 w-5 text-teal-600" />
@@ -1337,7 +1469,7 @@ export default function PropertyHandoverPage() {
 
       {/* MODAL 4: Chi Tiết Hồ Sơ Cấp Sổ Hồng */}
       <Dialog open={!!selectedPinkBookDetail} onOpenChange={() => setSelectedPinkBookDetail(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md z-[1000]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-purple-950">
               <Award className="h-5 w-5 text-purple-600" />
@@ -1387,7 +1519,7 @@ export default function PropertyHandoverPage() {
 
       {/* MODAL 5: Bàn Giao Chùm Chìa Khóa Smartkey */}
       <Dialog open={showKeyHandoverModal} onOpenChange={setShowKeyHandoverModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md z-[1000]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-teal-950">
               <Key className="h-5 w-5 text-teal-600" />

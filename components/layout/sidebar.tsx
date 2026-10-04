@@ -1,10 +1,39 @@
 "use client"
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, PieChart, Briefcase, Contact, Building, Layers, Map, Eye, LineChart as LineChartIcon, Calculator, Megaphone, CheckCircle, FileSignature, ClipboardList, MessageCircle, PhoneCall, FolderOpen, ClipboardCheck, Gift, Crown, CalendarRange, BarChart4, Database, BrainCircuit, Workflow, Trophy, Store, Newspaper, Settings, Smartphone, Puzzle, ScanLine, ChevronLeft, ChevronRight, ChevronDown, KeyRound, Gavel, Building2, RefreshCw } from 'lucide-react'
+import { 
+  LayoutDashboard, Users, PieChart, Briefcase, Contact, Building, Layers, Map, Eye, 
+  LineChart as LineChartIcon, Calculator, Megaphone, CheckCircle, FileSignature, 
+  ClipboardList, MessageCircle, PhoneCall, FolderOpen, ClipboardCheck, Gift, Crown, 
+  CalendarRange, BarChart4, Database, BrainCircuit, Workflow, Trophy, Store, Newspaper, 
+  Settings, Smartphone, Puzzle, ScanLine, ChevronLeft, ChevronRight, ChevronDown, 
+  KeyRound, Gavel, Building2, RefreshCw, Shield 
+} from 'lucide-react'
+import { apiClient } from '@/lib/api-client'
 
-export const NAV_GROUPS = [
+export interface NavLinkItem {
+  href: string
+  icon: any
+  label: string
+  roles?: string[]
+}
+
+export interface NavGroupItem {
+  title: string
+  links: NavLinkItem[]
+}
+
+export const ROLE_LABELS: Record<string, string> = {
+  SUPER_ADMIN: 'Tổng Quản Trị',
+  ADMIN: 'Quản Trị Viên',
+  DIRECTOR: 'Giám Đốc Khối',
+  TEAM_LEADER: 'Trưởng Phòng KD',
+  ACCOUNTANT: 'Kế Toán Trưởng',
+  AGENT: 'Chuyên Viên Sale',
+}
+
+export const NAV_GROUPS: NavGroupItem[] = [
   {
     title: "Tổng Quan & Bán Hàng",
     links: [
@@ -20,40 +49,40 @@ export const NAV_GROUPS = [
       { href: "/projects", icon: Building, label: "Kho Dự Án" },
       { href: "/gis", icon: Map, label: "Bản Đồ GIS" },
       { href: "/panorama", icon: Eye, label: "Sa Bàn & VR 360" },
-      { href: "/market-data", icon: Database, label: "Dữ Liệu Thị Trường" }
+      { href: "/market-data", icon: Database, label: "Dữ Liệu Thị Trường", roles: ['SUPER_ADMIN', 'ADMIN', 'DIRECTOR', 'TEAM_LEADER', 'AGENT'] }
     ]
   },
   {
     title: "Marketing & CSKH",
     links: [
-      { href: "/marketing", icon: Megaphone, label: "Automation" },
-      { href: "/cms", icon: Newspaper, label: "CMS & SEO" },
-      { href: "/surveys", icon: ClipboardCheck, label: "Khảo Sát & CSAT" },
+      { href: "/marketing", icon: Megaphone, label: "Automation", roles: ['SUPER_ADMIN', 'ADMIN', 'DIRECTOR', 'TEAM_LEADER', 'AGENT'] },
+      { href: "/cms", icon: Newspaper, label: "CMS & SEO", roles: ['SUPER_ADMIN', 'ADMIN', 'DIRECTOR', 'TEAM_LEADER'] },
+      { href: "/surveys", icon: ClipboardCheck, label: "Khảo Sát & CSAT", roles: ['SUPER_ADMIN', 'ADMIN', 'DIRECTOR', 'TEAM_LEADER'] },
       { href: "/loyalty", icon: Crown, label: "Khách Hàng Thân Thiết" },
       { href: "/events", icon: CalendarRange, label: "Sự Kiện & Check-in" },
-      { href: "/call-center", icon: PhoneCall, label: "Tổng Đài AI" }
+      { href: "/call-center", icon: PhoneCall, label: "Tổng Đài AI", roles: ['SUPER_ADMIN', 'ADMIN', 'DIRECTOR', 'TEAM_LEADER', 'AGENT'] }
     ]
   },
   {
     title: "Tiện Ích & Vận Hành",
     links: [
       { href: "/tasks", icon: ClipboardList, label: "Công Việc & Lịch" },
-      { href: "/handover", icon: KeyRound, label: "Bàn Giao & Nghiệm Thu" },
-      { href: "/operations", icon: Building2, label: "Vận Hành & Cư Dân" },
+      { href: "/handover", icon: KeyRound, label: "Bàn Giao & Nghiệm Thu", roles: ['SUPER_ADMIN', 'ADMIN', 'DIRECTOR', 'TEAM_LEADER', 'ACCOUNTANT'] },
+      { href: "/operations", icon: Building2, label: "Vận Hành & Cư Dân", roles: ['SUPER_ADMIN', 'ADMIN', 'DIRECTOR', 'TEAM_LEADER'] },
       { href: "/documents", icon: FolderOpen, label: "Kho Tài Liệu" },
       { href: "/chat", icon: MessageCircle, label: "Nhắn Tin Nội Bộ" },
-      { href: "/workflow", icon: Workflow, label: "Tự Động Hóa (Workflow)" },
+      { href: "/workflow", icon: Workflow, label: "Tự Động Hóa (Workflow)", roles: ['SUPER_ADMIN', 'ADMIN', 'DIRECTOR', 'TEAM_LEADER'] },
       { href: "/mobile", icon: Smartphone, label: "Ứng Dụng Di Động" }
     ]
   },
   {
     title: "AI & Phân Tích",
     links: [
-      { href: "/bi", icon: BarChart4, label: "Báo Cáo BI" },
+      { href: "/bi", icon: BarChart4, label: "Báo Cáo BI", roles: ['SUPER_ADMIN', 'ADMIN', 'DIRECTOR', 'TEAM_LEADER', 'ACCOUNTANT'] },
       { href: "/ai-knowledge", icon: BrainCircuit, label: "Trợ Lý AI" },
       { href: "/document-ai", icon: ScanLine, label: "AI Nhận Diện Giấy Tờ" },
       { href: "/mortgage", icon: Calculator, label: "Công Cụ Tài Chính" },
-      { href: "/portfolio", icon: LineChartIcon, label: "Quản Lý Đầu Tư" }
+      { href: "/portfolio", icon: LineChartIcon, label: "Quản Lý Đầu Tư", roles: ['SUPER_ADMIN', 'ADMIN', 'DIRECTOR'] }
     ]
   },
   {
@@ -62,32 +91,73 @@ export const NAV_GROUPS = [
       { href: "/referral", icon: Gift, label: "Giới Thiệu (Hoa Hồng)" },
       { href: "/gamification", icon: Trophy, label: "Đua Top & Thành Tích" },
       { href: "/marketplace", icon: Store, label: "Chợ Liên Kết (B2B)" },
-      { href: "/auction", icon: Gavel, label: "Đấu Giá BĐS (VIP)" },
+      { href: "/auction", icon: Gavel, label: "Đấu Giá BĐS (VIP)", roles: ['SUPER_ADMIN', 'ADMIN', 'DIRECTOR', 'TEAM_LEADER'] },
       { href: "/resale", icon: RefreshCw, label: "Ký Gửi & Thứ Cấp" }
     ]
   },
   {
     title: "Quản Trị Hệ Thống",
     links: [
-      { href: "/settings", icon: Settings, label: "Cài Đặt Hệ Thống" },
-      { href: "/integrations", icon: Puzzle, label: "Chợ Ứng Dụng (Apps)" },
+      { href: "/settings", icon: Settings, label: "Cài Đặt Hệ Thống", roles: ['SUPER_ADMIN', 'ADMIN', 'DIRECTOR'] },
+      { href: "/integrations", icon: Puzzle, label: "Chợ Ứng Dụng (Apps)", roles: ['SUPER_ADMIN', 'ADMIN'] },
       { href: "/agent", icon: Users, label: "Role: Cá Nhân" },
-      { href: "/manager", icon: Briefcase, label: "Role: Manager" },
-      { href: "/director", icon: PieChart, label: "Role: Director" }
+      { href: "/manager", icon: Briefcase, label: "Role: Manager", roles: ['SUPER_ADMIN', 'ADMIN', 'DIRECTOR', 'TEAM_LEADER'] },
+      { href: "/director", icon: PieChart, label: "Role: Director", roles: ['SUPER_ADMIN', 'ADMIN', 'DIRECTOR'] }
     ]
   }
 ]
+
+export function getFilteredNavGroups(role: string = 'SUPER_ADMIN'): NavGroupItem[] {
+  // SUPER_ADMIN has full permissions to all modules
+  if (role === 'SUPER_ADMIN') {
+    return NAV_GROUPS
+  }
+
+  return NAV_GROUPS.map(group => {
+    const filteredLinks = group.links.filter(link => {
+      if (!link.roles || link.roles.length === 0) return true
+      return link.roles.includes(role)
+    })
+    return {
+      ...group,
+      links: filteredLinks
+    }
+  }).filter(group => group.links.length > 0)
+}
 
 export function Sidebar() {
   const pathname = usePathname()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [collapsedGroups, setCollapsedGroups] = useState<Record<number, boolean>>({})
+  const [currentUser, setCurrentUser] = useState<any>({
+    fullName: 'Lê Hoàng Anh',
+    role: 'SUPER_ADMIN',
+    email: 'admin@novacrm.com',
+  })
+
+  useEffect(() => {
+    const user = apiClient.getUser()
+    if (user) {
+      setCurrentUser(user)
+    }
+  }, [])
+
+  const currentRole = currentUser?.role || 'SUPER_ADMIN'
+  const filteredNavGroups = getFilteredNavGroups(currentRole)
 
   const toggleGroup = (idx: number) => {
     setCollapsedGroups(prev => ({
       ...prev,
       [idx]: !prev[idx]
     }))
+  }
+
+  // Get initials for profile avatar
+  const getInitials = (name?: string) => {
+    if (!name) return 'AD'
+    const parts = name.trim().split(' ')
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
   }
 
   return (
@@ -97,6 +167,7 @@ export function Sidebar() {
       <button 
         onClick={() => setIsCollapsed(!isCollapsed)}
         className="absolute -right-3 top-6 flex h-6 w-6 items-center justify-center rounded-full bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 z-50 transition-transform shadow-sm"
+        title={isCollapsed ? "Mở rộng menu" : "Thu gọn menu"}
       >
         {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
       </button>
@@ -112,7 +183,7 @@ export function Sidebar() {
       
       <nav className="flex-1 overflow-y-auto overflow-x-hidden py-6 custom-scrollbar">
         <div className="space-y-6 px-3">
-           {NAV_GROUPS.map((group, idx) => {
+           {filteredNavGroups.map((group, idx) => {
               const isGroupCollapsed = collapsedGroups[idx]
               return (
                  <div key={idx}>
@@ -157,16 +228,26 @@ export function Sidebar() {
         </div>
       </nav>
       
-      {/* Bottom Profile Area */}
-      <div className={`p-4 border-t border-slate-800 bg-slate-950/50 overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'flex justify-center px-0' : ''}`}>
+      {/* Bottom Profile Area with Active Role */}
+      <div className={`p-4 border-t border-slate-800 bg-slate-950/70 overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'flex justify-center px-0' : ''}`}>
          <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
-            <div className="h-10 w-10 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center font-bold text-white shrink-0 cursor-pointer" title={isCollapsed ? "Admin User" : undefined}>
-               AD
+            <div 
+              className="h-10 w-10 rounded-full bg-gradient-to-tr from-indigo-700 to-indigo-500 border-2 border-indigo-400/40 flex items-center justify-center font-bold text-white shrink-0 shadow-md shadow-indigo-900/30" 
+              title={isCollapsed ? `${currentUser?.fullName || 'Người Dùng'} (${currentRole})` : undefined}
+            >
+               {getInitials(currentUser?.fullName)}
             </div>
             {!isCollapsed && (
-              <div className="overflow-hidden">
-                 <div className="text-sm font-bold text-white truncate">Admin User</div>
-                 <div className="text-xs text-slate-500 truncate">Super Admin</div>
+              <div className="overflow-hidden flex-1">
+                 <div className="text-sm font-bold text-white truncate" title={currentUser?.fullName}>
+                   {currentUser?.fullName || 'Lê Hoàng Anh'}
+                 </div>
+                 <div className="flex items-center gap-1.5 mt-0.5">
+                   <Shield className="h-3 w-3 text-indigo-400 shrink-0" />
+                   <span className="text-[11px] font-semibold text-indigo-300 truncate">
+                     {ROLE_LABELS[currentRole] || currentRole}
+                   </span>
+                 </div>
               </div>
             )}
          </div>

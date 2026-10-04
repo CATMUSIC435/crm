@@ -20,6 +20,10 @@ import {
 } from 'lucide-react'
 import { useStore } from '@/store/useStore'
 import { BookingTicket } from '@/types'
+import { useBookingsQuery } from '@/hooks/api/use-bookings-query'
+import { useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@/hooks/api/query-keys'
+import { apiClient } from '@/lib/api-client'
 
 // Define the steps in the workflow
 const COLUMNS = [
@@ -31,6 +35,7 @@ const COLUMNS = [
 ]
 
 export default function BookingWorkflowPage() {
+  const queryClient = useQueryClient()
   const { 
     customers, projects, inventory, bookingTickets,
     addBookingTicket, updateBookingTicketStatus, rejectBookingTicket, extendBookingSLA
@@ -74,18 +79,57 @@ export default function BookingWorkflowPage() {
     notes: 'Khách hàng chuyển khoản giữ chỗ qua QR Code Vietcombank'
   })
 
-  // List of active tickets from store
-  const tickets: BookingTicket[] = bookingTickets || []
+  // Live backend bookings query
+  const { data: remoteBookings } = useBookingsQuery(projectFilter !== 'all' ? projectFilter : undefined)
+  const tickets: BookingTicket[] = (remoteBookings && remoteBookings.length > 0 ? remoteBookings : bookingTickets) || []
+
+  // Helper to normalize backend stage to frontend column id
+  const normalizeStatus = (ticket: any): BookingTicket['status'] => {
+    const s = ticket.status || ticket.stage
+    switch (s) {
+      case 'INIT_SALE': return 'sale'
+      case 'MANAGER_APPROVED': return 'manager'
+      case 'DIRECTOR_APPROVED': return 'director'
+      case 'ACCOUNTANT_CONFIRMED': return 'payment'
+      case 'DONE_LOCKED': return 'done'
+      default: return s || 'sale'
+    }
+  }
+
+  // Normalized tickets matching both local store and NestJS backend data shapes
+  const normalizedTickets: BookingTicket[] = useMemo(() => {
+    return tickets.map(t => {
+      const custName = typeof t.customerName === 'string' ? t.customerName : (t as any).customer?.fullName || (t as any).customer?.name || 'Khách Hàng Mới'
+      const custPhone = typeof t.customerPhone === 'string' ? t.customerPhone : (t as any).customer?.phone || ''
+      const unitCode = typeof t.unitCode === 'string' ? t.unitCode : (t as any).unit?.code || 'NVW-01.01'
+      const projName = typeof t.projectName === 'string' ? t.projectName : (t as any).project?.name || 'NovaWorld Phan Thiet'
+
+      return {
+        ...t,
+        customerName: custName,
+        customerPhone: custPhone,
+        unitCode,
+        projectName: projName,
+        status: normalizeStatus(t),
+        type: t.type || (t as any).bookingType || 'Giữ chỗ có hoàn lại',
+        depositAmount: Number(t.depositAmount) || 100000000,
+        price: Number(t.price || (t as any).unitPrice) || 0,
+        agent: typeof t.agent === 'string' ? t.agent : (t as any).agentName || 'Lê Hoàng Anh',
+        time: t.time || '15 phút trước',
+        expiresAt: typeof t.expiresAt === 'string' ? t.expiresAt : 'Còn 15 phút',
+      }
+    })
+  }, [tickets])
 
   // Filtered tickets
   const filteredTickets = useMemo(() => {
-    return tickets.filter(t => {
+    return normalizedTickets.filter(t => {
       const matchesProject = projectFilter === 'all' || 
         t.projectId === projectFilter || 
-        t.projectName.toLowerCase().includes(projectFilter.toLowerCase())
+        (typeof t.projectName === 'string' && t.projectName.toLowerCase().includes(projectFilter.toLowerCase()))
       
       const matchesAgent = agentFilter === 'all' || 
-        t.agent.toLowerCase().includes(agentFilter.toLowerCase())
+        (typeof t.agent === 'string' && t.agent.toLowerCase().includes(agentFilter.toLowerCase()))
       
       const matchesType = typeFilter === 'all' || t.type === typeFilter
       
@@ -93,22 +137,22 @@ export default function BookingWorkflowPage() {
 
       const q = searchQuery.toLowerCase().trim()
       const matchesSearch = !q || 
-        t.id.toLowerCase().includes(q) ||
-        t.customerName.toLowerCase().includes(q) || 
-        (t.customerPhone && t.customerPhone.includes(q)) ||
-        t.unitCode.toLowerCase().includes(q) ||
-        t.projectName.toLowerCase().includes(q)
+        (typeof t.id === 'string' && t.id.toLowerCase().includes(q)) ||
+        (typeof t.customerName === 'string' && t.customerName.toLowerCase().includes(q)) || 
+        (typeof t.customerPhone === 'string' && t.customerPhone.includes(q)) ||
+        (typeof t.unitCode === 'string' && t.unitCode.toLowerCase().includes(q)) ||
+        (typeof t.projectName === 'string' && t.projectName.toLowerCase().includes(q))
 
       return matchesProject && matchesAgent && matchesType && matchesPriority && matchesSearch
     })
-  }, [tickets, projectFilter, agentFilter, typeFilter, priorityFilter, searchQuery])
+  }, [normalizedTickets, projectFilter, agentFilter, typeFilter, priorityFilter, searchQuery])
 
   // KPIs
-  const totalCount = tickets.length
-  const waitingApprovalCount = tickets.filter(t => t.status === 'manager' || t.status === 'director').length
-  const waitingPaymentCount = tickets.filter(t => t.status === 'payment').length
-  const doneCount = tickets.filter(t => t.status === 'done').length
-  const totalDepositAmount = tickets.reduce((sum, t) => sum + (t.depositAmount || 0), 0)
+  const totalCount = normalizedTickets.length
+  const waitingApprovalCount = normalizedTickets.filter(t => t.status === 'manager' || t.status === 'director').length
+  const waitingPaymentCount = normalizedTickets.filter(t => t.status === 'payment').length
+  const doneCount = normalizedTickets.filter(t => t.status === 'done').length
+  const totalDepositAmount = normalizedTickets.reduce((sum, t) => sum + Number(t.depositAmount || 0), 0)
 
   // Format currency
   const formatCurrency = (val: number) => {
@@ -125,6 +169,10 @@ export default function BookingWorkflowPage() {
       const nextStep = COLUMNS[currentIndex + 1]
       const nextStatus = nextStep.id as BookingTicket['status']
       
+      apiClient.bookings.approve(ticketId, `Chuyển duyệt sang bước ${nextStep.label}`)
+        .then(() => queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all }))
+        .catch(err => console.warn('Backend approve booking fallback:', err?.message))
+
       updateBookingTicketStatus(ticketId, nextStatus, `Chuyển duyệt sang bước ${nextStep.label}`, 'Quản trị viên')
       
       if (selectedTicket && selectedTicket.id === ticketId) {
@@ -149,6 +197,11 @@ export default function BookingWorkflowPage() {
   // Confirm Reject
   const handleConfirmReject = () => {
     if (!ticketToReject) return
+
+    apiClient.bookings.reject(ticketToReject, rejectReason || 'Hồ sơ chưa đạt yêu cầu, trả về Sale hoàn thiện bổ sung')
+      .then(() => queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all }))
+      .catch(err => console.warn('Backend reject booking fallback:', err?.message))
+
     rejectBookingTicket(ticketToReject, rejectReason || 'Hồ sơ chưa đạt yêu cầu, trả về Sale hoàn thiện bổ sung', 'Quản lý phê duyệt')
     setIsRejectDialogOpen(false)
     if (selectedTicket && selectedTicket.id === ticketToReject) {
@@ -160,6 +213,10 @@ export default function BookingWorkflowPage() {
 
   // Handle SLA Extension
   const handleExtendSLA = (ticketId: string, minutes: number = 30) => {
+    apiClient.bookings.extendSla(ticketId, minutes, 'Khách hàng xin thêm thời gian thu xếp tài chính')
+      .then(() => queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all }))
+      .catch(err => console.warn('Backend extendSla fallback:', err?.message))
+
     extendBookingSLA(ticketId, minutes, 'Khách hàng xin thêm thời gian thu xếp tài chính')
     if (selectedTicket && selectedTicket.id === ticketId) {
       setSelectedTicket(prev => prev ? { 
@@ -257,31 +314,44 @@ export default function BookingWorkflowPage() {
   // Submit New Booking
   const handleCreateBookingSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newBooking.customerId || !newBooking.projectId || !newBooking.unitId) {
-      alert('Vui lòng chọn đầy đủ Khách hàng, Dự án và Mã căn hộ!')
-      return
-    }
+    const targetProjId = newBooking.projectId || projects[0]?.id || 'p1'
+    const targetCustId = newBooking.customerId || customers[0]?.id || 'c1'
+    const proj = projects.find(p => p.id === targetProjId)
+    const cust = customers.find(c => c.id === targetCustId)
+    const targetUnit = (newBooking.unitId ? inventory.find(u => u.id === newBooking.unitId) : null) || inventory.find(i => i.projectId === targetProjId) || inventory[0]
 
-    const proj = projects.find(p => p.id === newBooking.projectId)
-    const cust = customers.find(c => c.id === newBooking.customerId)
+    apiClient.request('/bookings', {
+      method: 'POST',
+      body: JSON.stringify({
+        unitId: targetUnit?.id || 'i2',
+        customerId: targetCustId,
+        projectId: targetProjId,
+        depositAmount: Number(newBooking.depositAmount) || 100000000,
+        bookingType: newBooking.type || 'Giữ chỗ có hoàn lại',
+        priority: newBooking.priority || 'normal',
+        notes: newBooking.notes,
+      }),
+    })
+      .then(() => queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all }))
+      .catch(err => console.warn('Backend API create booking fallback:', err?.message))
 
     addBookingTicket({
-      customerId: newBooking.customerId,
+      customerId: targetCustId,
       customerName: newBooking.customerName || cust?.name || 'Khách Hàng Mới',
       customerPhone: newBooking.customerPhone || cust?.phone || '0900000000',
       customerEmail: cust?.email || '',
-      projectId: newBooking.projectId,
+      projectId: targetProjId,
       projectName: proj?.name || 'Dự án Nova',
-      unitId: newBooking.unitId,
-      unitCode: newBooking.unitCode,
-      price: newBooking.price,
+      unitId: targetUnit?.id || 'i2',
+      unitCode: newBooking.unitCode || targetUnit?.code || 'NVW-01.02',
+      price: newBooking.price || targetUnit?.price || 18500000000,
       depositAmount: Number(newBooking.depositAmount) || 100000000,
       status: 'sale',
-      type: newBooking.type,
-      priority: newBooking.priority,
-      paymentMethod: newBooking.paymentMethod,
+      type: newBooking.type || 'Giữ chỗ có hoàn lại',
+      priority: newBooking.priority || 'normal',
+      paymentMethod: newBooking.paymentMethod || 'Chuyển khoản Vietcombank',
       docs: '3/4',
-      agent: newBooking.agent,
+      agent: newBooking.agent || 'Lê Hoàng Anh',
       time: 'Vừa xong',
       expiresAt: 'Còn 60 phút',
       remainingMinutes: 60,
@@ -290,7 +360,7 @@ export default function BookingWorkflowPage() {
     })
 
     setIsAddModalOpen(false)
-    showToast(`🎉 Đã khởi tạo thành công phiếu booking cho căn ${newBooking.unitCode}!`)
+    showToast(`🎉 Đã khởi tạo thành công phiếu booking cho căn ${newBooking.unitCode || targetUnit?.code}!`)
     
     // Reset form
     setNewBooking({
@@ -334,7 +404,8 @@ export default function BookingWorkflowPage() {
   }
 
   // Type Badge Helper
-  const getTypeBadge = (type: string) => {
+  const getTypeBadge = (type?: string) => {
+    if (!type) return <Badge className="bg-sky-100 text-sky-800 hover:bg-sky-200 border-none text-[11px]">Giữ chỗ</Badge>
     if (type.includes('Ký HĐ')) {
       return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200 border-none text-[11px]">{type}</Badge>
     }
@@ -731,7 +802,7 @@ export default function BookingWorkflowPage() {
       {/* MODAL 1: TẠO YÊU CẦU BOOKING MỚI                          */}
       {/* ========================================================= */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto p-6 z-[1000]">
           <DialogHeader>
             <DialogTitle className="text-xl font-black text-slate-900 flex items-center gap-2">
               <Plus className="h-5 w-5 text-indigo-600" />
@@ -962,7 +1033,7 @@ export default function BookingWorkflowPage() {
       {/* ========================================================= */}
       {selectedTicket && (
         <Dialog open={!!selectedTicket} onOpenChange={(open) => !open && setSelectedTicket(null)}>
-          <DialogContent className="sm:max-w-3xl max-h-[92vh] overflow-y-auto p-6">
+          <DialogContent className="sm:max-w-3xl max-h-[92vh] overflow-y-auto p-6 z-[1000]">
             <DialogHeader>
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2">
@@ -1198,7 +1269,7 @@ export default function BookingWorkflowPage() {
       {/* MODAL 3: DIALOG TỪ CHỐI DUYỆT (REJECT DIALOG)             */}
       {/* ========================================================= */}
       <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
-        <DialogContent className="sm:max-w-md p-6">
+        <DialogContent className="sm:max-w-md p-6 z-[1000]">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-rose-600 flex items-center gap-2">
               <AlertCircle className="h-5 w-5" />

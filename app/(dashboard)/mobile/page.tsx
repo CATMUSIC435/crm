@@ -1160,7 +1160,7 @@ export default function MobileHubPage() {
 
       {/* 1. MODAL 1: XEM HỢP ĐỒNG KÈM CHỮ KÝ ĐIỆN TỬ */}
       {selectedContractToPreview && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-2xl w-full border shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">
@@ -1247,7 +1247,7 @@ export default function MobileHubPage() {
 
       {/* 2. MODAL 2: HƯỚNG DẪN CÀI ĐẶT PWA KHÔNG CẦN APP STORE */}
       {showPwaInstallModal && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full border shadow-2xl overflow-hidden flex flex-col">
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">
@@ -1304,7 +1304,7 @@ export default function MobileHubPage() {
 
       {/* 3. MODAL 3: QUÉT THẺ ĐỊNH DANH CCCD GẮN CHIP (eKYC SCANNER) */}
       {showScanIdModal && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full border shadow-2xl overflow-hidden flex flex-col">
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">
@@ -1365,7 +1365,7 @@ export default function MobileHubPage() {
 
       {/* 4. MODAL 4: CHI TIẾT GÓI TIN HÀNG ĐỢI ĐỒNG BỘ (PAYLOAD JSON) */}
       {selectedQueueItemModal && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full border shadow-2xl overflow-hidden flex flex-col">
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">
@@ -1438,7 +1438,7 @@ export default function MobileHubPage() {
 
       {/* 5. MODAL 5: HẸN GIỜ PHÁT SÓNG THÔNG BÁO TỰ ĐỘNG */}
       {showScheduleNotifModal && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full border shadow-2xl overflow-hidden flex flex-col">
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">

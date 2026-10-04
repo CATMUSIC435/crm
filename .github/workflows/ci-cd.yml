@@ -1,0 +1,218 @@
+name: Nova CRM CI/CD Enterprise Pipeline
+
+on:
+  push:
+    branches: [ "main", "master", "release/*" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_BACKEND: ghcr.io/${{ github.repository }}/backend
+  IMAGE_FRONTEND: ghcr.io/${{ github.repository }}/frontend
+
+jobs:
+  # =============================================================
+  # 1. CODE QUALITY & TYPE INTEGRITY CHECK
+  # =============================================================
+  quality-check:
+    name: Lint & Typecheck (Frontend & Backend)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Frontend Dependencies
+        run: npm ci
+
+      - name: Check Frontend Types
+        run: npx tsc --noEmit
+
+      - name: Install Backend Dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Build Backend
+        working-directory: ./backend
+        run: npm run build
+
+  # =============================================================
+  # 2. BACKEND AUTOMATED UNIT & INTEGRATION TESTS
+  # =============================================================
+  backend-tests:
+    name: Backend Test Suites (PostgreSQL 16 & Redis 7)
+    needs: quality-check
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password123
+          POSTGRES_DB: novacrm_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Backend Dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Push Prisma Schema to Test DB & Seed
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql://postgres:password123@localhost:5432/novacrm_db?schema=public
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+        run: |
+          npx prisma db push
+          npm run prisma:seed
+
+      - name: Execute 9 Backend Test Suites (50 Tests)
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql://postgres:password123@localhost:5432/novacrm_db?schema=public
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          JWT_SECRET: test_jwt_secret_key_2026
+        run: npm test
+
+  # =============================================================
+  # 3. FRONTEND PLAYWRIGHT E2E TESTS
+  # =============================================================
+  frontend-e2e:
+    name: Frontend E2E Flow Tests (Playwright)
+    needs: backend-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E Test Suite
+        env:
+          CI: true
+        run: npx playwright test e2e/phase5-marketing-integrations.spec.ts
+
+      - name: Upload Test Report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  # =============================================================
+  # 4. BUILD & PUBLISH MULTI-STAGE DOCKER IMAGES (GHCR)
+  # =============================================================
+  build-and-push:
+    name: Build & Push Production Docker Images
+    needs: [backend-tests, frontend-e2e]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push Backend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_BACKEND }}:latest
+            ${{ env.IMAGE_BACKEND }}:${{ github.sha }}
+
+      - name: Build & Push Frontend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_FRONTEND }}:latest
+            ${{ env.IMAGE_FRONTEND }}:${{ github.sha }}
+
+  # =============================================================
+  # 5. KUBERNETES GITOPS ROLLOUT
+  # =============================================================
+  deploy-kubernetes:
+    name: Kubernetes Zero-Downtime Rollout
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.30.0'
+
+      - name: Apply K8s Manifests (Dry-Run / Lint)
+        run: |
+          kubectl apply --dry-run=client -f k8s/00-namespace.yaml
+          kubectl apply --dry-run=client -f k8s/01-config-secrets.yaml
+          kubectl apply --dry-run=client -f k8s/04-backend.yaml
+          kubectl apply --dry-run=client -f k8s/05-frontend.yaml
+          kubectl apply --dry-run=client -f k8s/06-ingress.yaml

@@ -388,6 +388,79 @@ export default function ResalePage() {
   const [demands, setDemands] = useState<ClientDemandItem[]>(initialDemands)
   const [showings, setShowings] = useState<ShowingScheduleItem[]>(initialShowings)
   const [closings, setClosings] = useState<ResaleClosingDealItem[]>(initialClosings)
+  const [isLiveConnected, setIsLiveConnected] = useState(false)
+
+  React.useEffect(() => {
+    async function loadBackendResale() {
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('nova_auth_token') || '' : ''
+        const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {}
+
+        const resListings = await fetch('/backend-api/resale/listings', { headers })
+        if (resListings.ok) {
+          const jsonListings = await resListings.json()
+          if (jsonListings.data && Array.isArray(jsonListings.data) && jsonListings.data.length > 0) {
+            setListings(jsonListings.data.map((l: any) => ({
+              id: l.id,
+              listingCode: l.listingCode,
+              type: l.type,
+              projectName: l.projectName,
+              propertyCode: l.propertyCode,
+              propertyType: l.propertyType,
+              ownerName: l.ownerName,
+              ownerPhone: l.ownerPhone,
+              area: Number(l.area),
+              bedrooms: l.bedrooms,
+              bathrooms: l.bathrooms,
+              direction: l.direction || 'Đông Nam',
+              askingPrice: Number(l.askingPrice),
+              targetNetPrice: l.targetNetPrice ? Number(l.targetNetPrice) : Number(l.askingPrice) * 0.98,
+              commissionRate: l.commissionRate || 1.5,
+              commissionAmount: Number(l.commissionAmount) || Math.round(Number(l.askingPrice) * 0.015),
+              legalStatus: l.legalStatus || 'Sổ hồng riêng',
+              furnishedStatus: l.furnishedStatus || 'Nội thất cơ bản',
+              keyStatus: l.keyStatus || 'Sàn giữ chìa',
+              status: l.status,
+              exclusiveContract: l.exclusiveContract,
+              exclusiveEndDate: l.exclusiveEndDate,
+              viewCount: l.viewCount || 100,
+              showingCount: l.showingCount || 5,
+              matchedLeadsCount: l.matchedLeadsCount || 3,
+              imageUrl: l.imageUrl || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&auto=format&fit=crop&q=60',
+              createdAt: l.createdAt ? l.createdAt.slice(0, 10) : '2026-09-15',
+            })))
+            setIsLiveConnected(true)
+          }
+        }
+
+        const resDemands = await fetch('/backend-api/resale/demands', { headers })
+        if (resDemands.ok) {
+          const jsonDemands = await resDemands.json()
+          if (jsonDemands.data && Array.isArray(jsonDemands.data) && jsonDemands.data.length > 0) {
+            setDemands(jsonDemands.data.map((d: any) => ({
+              id: d.id,
+              clientName: d.clientName,
+              clientPhone: d.clientPhone,
+              demandType: d.demandType,
+              targetProjects: Array.isArray(d.targetProjects) ? d.targetProjects : [d.targetProjects],
+              minPrice: Number(d.minPrice),
+              maxPrice: Number(d.maxPrice),
+              bedrooms: d.bedrooms,
+              purpose: d.purpose,
+              urgency: d.urgency,
+              assignedAgent: d.assignedAgent,
+              matchingScore: d.matchingScore || 90,
+              suggestedListingCode: d.suggestedListingCode,
+              createdAt: d.createdAt ? d.createdAt.slice(0, 10) : '2026-09-28',
+            })))
+          }
+        }
+      } catch (e) {
+        // Fallback silently
+      }
+    }
+    loadBackendResale()
+  }, [])
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('')
@@ -538,6 +611,35 @@ export default function ResalePage() {
     }
     setListings([newListing, ...listings])
     setShowConsignmentModal(false)
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('nova_auth_token') || '' : ''
+    fetch('/backend-api/resale/listings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        type: newListing.type,
+        projectName: newListing.projectName,
+        propertyCode: newListing.propertyCode,
+        propertyType: newListing.propertyType,
+        ownerName: newListing.ownerName,
+        ownerPhone: newListing.ownerPhone,
+        area: newListing.area,
+        bedrooms: newListing.bedrooms,
+        bathrooms: newListing.bathrooms,
+        direction: newListing.direction,
+        askingPrice: newListing.askingPrice,
+        targetNetPrice: newListing.targetNetPrice,
+        commissionRate: newListing.commissionRate,
+        legalStatus: newListing.legalStatus,
+        furnishedStatus: newListing.furnishedStatus,
+        keyStatus: newListing.keyStatus,
+        exclusiveContract: newListing.exclusiveContract,
+      })
+    }).catch(() => {})
+
     setNewListingForm({
       ownerName: '',
       ownerPhone: '',
@@ -581,6 +683,28 @@ export default function ResalePage() {
     }
     setDemands([newDem, ...demands])
     setShowDemandModal(false)
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('nova_auth_token') || '' : ''
+    fetch('/backend-api/resale/demands', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        clientName: newDem.clientName,
+        clientPhone: newDem.clientPhone,
+        demandType: newDem.demandType,
+        targetProjects: newDem.targetProjects,
+        minPrice: newDem.minPrice,
+        maxPrice: newDem.maxPrice,
+        bedrooms: newDem.bedrooms,
+        purpose: newDem.purpose,
+        urgency: newDem.urgency,
+        assignedAgent: newDem.assignedAgent,
+      })
+    }).catch(() => {})
+
     setNewDemandForm({
       clientName: '',
       clientPhone: '',
@@ -633,6 +757,12 @@ export default function ResalePage() {
             <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
               Chuyển Nhượng & Cho Thuê
             </span>
+            {isLiveConnected && (
+              <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                Live PostgreSQL Engine
+              </span>
+            )}
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Trung tâm kết nối ký gửi độc quyền, thẩm định giá CMA, so khớp nhu cầu mua/thuê AI và quản lý chìa khóa xem nhà thực tế.
@@ -1322,8 +1452,14 @@ export default function ResalePage() {
       {/* MODAL 1: TIẾP NHẬN KÝ GỬI MỚI */}
       {/* ========================================================================= */}
       {showConsignmentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 my-8">
+        <div 
+          onClick={() => setShowConsignmentModal(false)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 my-8"
+          >
             <button
               onClick={() => setShowConsignmentModal(false)}
               className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
@@ -1528,10 +1664,17 @@ export default function ResalePage() {
 
       {/* ========================================================================= */}
       {/* MODAL 2: THÊM NHU CẦU MUA / THUÊ */}
+      {/* MODAL 2: TÌM KIẾM NHU CẦU MUA / THUÊ (DEMAND) */}
       {/* ========================================================================= */}
       {showDemandModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 my-8">
+        <div 
+          onClick={() => setShowDemandModal(false)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 my-8"
+          >
             <button
               onClick={() => setShowDemandModal(false)}
               className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
@@ -1695,8 +1838,17 @@ export default function ResalePage() {
       {/* MODAL 3: ĐẶT LỊCH DẪN KHÁCH XEM NHÀ */}
       {/* ========================================================================= */}
       {showScheduleModal && selectedListingForSchedule && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 my-8">
+        <div 
+          onClick={() => {
+            setShowScheduleModal(false)
+            setSelectedListingForSchedule(null)
+          }}
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 my-8"
+          >
             <button
               onClick={() => {
                 setShowScheduleModal(false)
@@ -1843,8 +1995,14 @@ export default function ResalePage() {
       {/* MODAL 4: HỢP ĐỒNG MÔI GIỚI KÝ GỬI ĐỘC QUYỀN MẪU A4 */}
       {/* ========================================================================= */}
       {selectedListingForAgreement && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-8 my-8 text-slate-900 dark:text-white">
+        <div 
+          onClick={() => setSelectedListingForAgreement(null)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-8 my-8 text-slate-900 dark:text-white"
+          >
             <button
               onClick={() => setSelectedListingForAgreement(null)}
               className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
@@ -1940,8 +2098,14 @@ export default function ResalePage() {
       {/* MODAL 5: THỎA THUẬN ĐẶT CỌC BA BÊN MẪU A4 */}
       {/* ========================================================================= */}
       {selectedDealForDeposit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-8 my-8 text-slate-900 dark:text-white">
+        <div 
+          onClick={() => setSelectedDealForDeposit(null)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-8 my-8 text-slate-900 dark:text-white"
+          >
             <button
               onClick={() => setSelectedDealForDeposit(null)}
               className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
@@ -2055,8 +2219,14 @@ export default function ResalePage() {
       {/* POPUP XEM KHÁCH PHÙ HỢP CỦA CĂN KÝ GỬI */}
       {/* ========================================================================= */}
       {selectedMatchListing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 my-8">
+        <div 
+          onClick={() => setSelectedMatchListing(null)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 my-8"
+          >
             <button
               onClick={() => setSelectedMatchListing(null)}
               className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"

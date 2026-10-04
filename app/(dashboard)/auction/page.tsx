@@ -238,6 +238,32 @@ export default function PropertyAuctionPage() {
     return () => clearInterval(interval)
   }, [selectedLiveRoom])
 
+  // Live Backend Auction Rooms Sync
+  React.useEffect(() => {
+    async function loadBackendAuctions() {
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('nova_auth_token') || '' : ''
+        const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {}
+        const res = await fetch('/backend-api/auctions', { headers })
+        if (res.ok) {
+          const json = await res.json()
+          if (json.data && json.data.length > 0) {
+            setAuctions(prev => {
+              const backendMap = new Map<string, any>(json.data.map((item: any) => [item.code, item]))
+              return prev.map(p => {
+                const b = backendMap.get(p.code)
+                return b ? { ...p, currentBid: b.currentBid || p.currentBid } : p
+              })
+            })
+          }
+        }
+      } catch (e) {
+        // Fallback to local live auctions
+      }
+    }
+    loadBackendAuctions()
+  }, [])
+
   // Action: Đặt giá trong phòng Live
   const handlePlaceBid = (addAmount: number) => {
     playGavelSound()
@@ -258,6 +284,21 @@ export default function PropertyAuctionPage() {
 
     setLiveBidsList(prev => [newBid, ...prev.map(b => ({ ...b, isWinningBid: false }))])
     showToast(`Đã gõ búa đặt giá thành công: ${(nextAmount / 1000000000).toFixed(2)} Tỷ VNĐ!`)
+
+    // Đồng bộ lên NestJS Backend & WebSocket
+    const token = typeof window !== 'undefined' ? localStorage.getItem('nova_auth_token') || '' : ''
+    fetch(`/backend-api/auctions/${selectedLiveRoom?.id || 'AUC-101'}/bid`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        bidderId: 'usr-admin-001',
+        bidderName: 'Bạn (VIP #007)',
+        amount: nextAmount
+      })
+    }).catch(() => {})
   }
 
   // Action: Submit Modal 1 (Ký Quỹ)
@@ -281,7 +322,23 @@ export default function PropertyAuctionPage() {
     setEscrows(prev => [newEscrow, ...prev])
     setShowRegisterBidderModal(false)
     showToast(`Ký quỹ thành công ${(newEscrow.amount / 1000000).toLocaleString()} Tr VNĐ cho phiên [${newEscrow.propertyCode}]! Mã số thẻ BID đã được kích hoạt.`)
+
+    // Gửi lên NestJS Backend Escrow Ledger
+    const token = typeof window !== 'undefined' ? localStorage.getItem('nova_auth_token') || '' : ''
+    fetch(`/backend-api/auctions/${regAuctionId}/escrow`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        bidderId: 'usr-admin-001',
+        bidderName: regCustomerName,
+        depositAmount: newEscrow.amount
+      })
+    }).catch(() => {})
   }
+
 
   // Action: Submit Modal 2 (Tạo Phiên Mới)
   const handleCreateAuction = (e: React.FormEvent) => {
@@ -895,7 +952,7 @@ export default function PropertyAuctionPage() {
 
       {/* MODAL 1: Đăng Ký Ký Quỹ Đấu Giá */}
       <Dialog open={showRegisterBidderModal} onOpenChange={setShowRegisterBidderModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md z-[1000]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-amber-950">
               <ShieldCheck className="h-5 w-5 text-amber-600" />
@@ -971,7 +1028,7 @@ export default function PropertyAuctionPage() {
 
       {/* MODAL 2: Khởi Tạo Phiên Mới */}
       <Dialog open={showCreateAuctionModal} onOpenChange={setShowCreateAuctionModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md z-[1000]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-slate-900">
               <Plus className="h-5 w-5 text-amber-600" />
@@ -1029,7 +1086,7 @@ export default function PropertyAuctionPage() {
 
       {/* MODAL 3: PHÒNG ĐẤU GIÁ TRỰC TIẾP SIÊU THỰC TẾ (LIVE ROOM) */}
       <Dialog open={!!selectedLiveRoom} onOpenChange={() => setSelectedLiveRoom(null)}>
-        <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto bg-slate-950 text-white border-amber-500/40 p-6">
+        <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto bg-slate-950 text-white border-amber-500/40 p-6 z-[1000]">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -1160,7 +1217,7 @@ export default function PropertyAuctionPage() {
 
       {/* MODAL 4: BIÊN BẢN XÁC NHẬN TRÚNG ĐẤU GIÁ A4 */}
       <Dialog open={!!selectedWinnerModal} onOpenChange={() => setSelectedWinnerModal(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto z-[1000]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-slate-900">
               <Award className="h-5 w-5 text-amber-600" />
@@ -1249,7 +1306,7 @@ export default function PropertyAuctionPage() {
 
       {/* MODAL 5: XÁC NHẬN HOÀN TIỀN KÝ QUỸ */}
       <Dialog open={showRefundModal} onOpenChange={setShowRefundModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md z-[1000]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-rose-950">
               <RefreshCw className="h-5 w-5 text-rose-600" />

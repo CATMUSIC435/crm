@@ -1036,8 +1036,14 @@ export default function GamificationPage() {
 
       {/* MODAL 1: THÁCH ĐẤU PK 1-1 */}
       {showChallengeModal && challengeTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div 
+          onClick={() => setShowChallengeModal(false)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden"
+          >
             <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-gradient-to-r from-red-950 to-indigo-950 text-white">
               <div className="flex items-center gap-2">
                 <Swords className="h-5 w-5 text-amber-400" />
@@ -1113,8 +1119,14 @@ export default function GamificationPage() {
 
       {/* MODAL 2: XÁC NHẬN ĐỔI QUÀ THƯỞNG */}
       {showRewardStoreModal && selectedReward && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div 
+          onClick={() => setShowRewardStoreModal(false)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden"
+          >
             <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950">
               <div className="flex items-center gap-2">
                 <Gift className="h-5 w-5 text-amber-500" />
@@ -1165,8 +1177,14 @@ export default function GamificationPage() {
 
       {/* MODAL 3: XEM HỒ SƠ CHIẾN TÍCH CÁ NHÂN */}
       {selectedAgentForDetail && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div 
+          onClick={() => setSelectedAgentForDetail(null)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden"
+          >
             <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-900 text-white">
               <div className="flex items-center gap-3">
                 <Avatar className="h-12 w-12 border-2 border-amber-400">
@@ -1235,8 +1253,14 @@ export default function GamificationPage() {
 
       {/* MODAL 4: GỬI LỜI CHÚC MỪNG & KUDOS */}
       {showKudosModal && kudosTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div 
+          onClick={() => setShowKudosModal(false)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden"
+          >
             <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-950">
               <div className="flex items-center gap-2">
                 <ThumbsUp className="h-5 w-5" />
@@ -1289,8 +1313,14 @@ export default function GamificationPage() {
 
       {/* MODAL 5: CHI TIẾT SĂN BOSS DOANH SỐ TOÀN SÀN */}
       {showBossRaidModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div 
+          onClick={() => setShowBossRaidModal(false)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden"
+          >
             <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-gradient-to-r from-indigo-950 via-purple-950 to-slate-900 text-white">
               <div className="flex items-center gap-2">
                 <Crown className="h-6 w-6 text-yellow-400" />

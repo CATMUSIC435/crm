@@ -942,7 +942,7 @@ export default function PortfolioPage() {
 
       {/* 5. MODAL 1: CHI TIẾT THẺ CĂN HỘ & PHÁP LÝ SỐ HÓA */}
       {selectedPropertyForDetail && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-2xl w-full border shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">
@@ -1050,7 +1050,7 @@ export default function PortfolioPage() {
 
       {/* 6. MODAL 2: THÔNG BÁO ĐÓNG TIỀN & VIETQR 1-CHẠM */}
       {selectedMilestoneForPayment && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full border shadow-2xl overflow-hidden flex flex-col">
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">
@@ -1125,7 +1125,7 @@ export default function PortfolioPage() {
 
       {/* 7. MODAL 3: MÔ PHỎNG CHỐT LỜI / THOÁT HÀNG BĐS (EXIT SIMULATOR) */}
       {showExitModal && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-xl w-full border shadow-2xl overflow-hidden flex flex-col">
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">
@@ -1230,7 +1230,7 @@ export default function PortfolioPage() {
 
       {/* 8. MODAL 4: THÊM BẤT ĐỘNG SẢN VÀO DANH MỤC VIP */}
       {showAddPropertyModal && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full border shadow-2xl overflow-hidden flex flex-col">
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">
@@ -1350,7 +1350,7 @@ export default function PortfolioPage() {
 
       {/* 9. MODAL 5: XUẤT BÁO CÁO THẨM ĐỊNH GIA SẢN VIP (PDF MEMO) */}
       {showWealthReportModal && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full border shadow-2xl overflow-hidden flex flex-col">
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">

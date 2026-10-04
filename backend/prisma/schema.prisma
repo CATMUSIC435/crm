@@ -1,0 +1,901 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// -------------------------------------------------------------
+// 1. NGƯỜI DÙNG & PHÂN QUYỀN RBAC (USERS & ROLES)
+// -------------------------------------------------------------
+enum UserRole {
+  AGENT          // Môi giới kinh doanh
+  TEAM_LEADER    // Trưởng phòng kinh doanh
+  DIRECTOR       // Giám đốc khối bán hàng
+  ACCOUNTANT     // Kế toán đối soát dòng tiền
+  ADMIN          // Quản trị viên chi nhánh
+  SUPER_ADMIN    // Quản trị hệ thống toàn sàn
+}
+
+model User {
+  id              String         @id @default(uuid())
+  email           String         @unique
+  passwordHash    String
+  fullName        String
+  phone           String         @unique
+  role            UserRole       @default(AGENT)
+  branchId        String?
+  avatar          String?
+  exp             Int            @default(0)
+  level           Int            @default(1)
+  twoFactorSecret String?
+  is2FAEnabled    Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  customers       Customer[]     @relation("AgentCustomers")
+  bookingTickets  BookingTicket[]
+  createdContracts Contract[]
+  auditLogs       AuditLog[]
+}
+
+// -------------------------------------------------------------
+// 2. DỰ ÁN ĐẠI ĐÔ THỊ (PROJECTS)
+// -------------------------------------------------------------
+enum ProjectStatus {
+  UPCOMING       // Sắp mở bán
+  OPENING        // Đang mở bán
+  HANDED_OVER    // Đã bàn giao
+}
+
+model Project {
+  id              String         @id @default(uuid())
+  code            String         @unique // P01, P02
+  name            String
+  location        String
+  developer       String
+  type            String         // Biệt thự, Căn hộ, Nhà phố
+  totalUnits      Int            @default(0)
+  status          ProjectStatus  @default(OPENING)
+  targetRevenue   Decimal        @db.Decimal(18, 2)
+  actualRevenue   Decimal        @default(0) @db.Decimal(18, 2)
+  thumbnail       String?
+  launchDate      DateTime?
+  handoverDate    DateTime?
+  
+  // Vị trí không gian GIS
+  latitude        Float?
+  longitude       Float?
+  gisPolygonJson  Json?          // Lớp ranh 1/500 GeoJSON
+
+  aiAnalysis      Json?          // Phân tích đầu tư AI (BUY rating, payback, rủi ro)
+  units           InventoryItem[]
+  bookings        BookingTicket[]
+  contracts       Contract[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+// -------------------------------------------------------------
+// 3. RỔ HÀNG & SƠ ĐỒ PHÂN LÔ MA TRẬN (INVENTORY)
+// -------------------------------------------------------------
+enum UnitStatus {
+  AVAILABLE      // Trống
+  BOOKING        // Giữ chỗ (đang trong SLA 15p)
+  SOLD           // Đã ký HĐMB / Cọc
+  LOCKED         // Đang khóa nội bộ
+}
+
+model InventoryItem {
+  id               String         @id @default(uuid())
+  code             String         @unique // NVW-01.01
+  projectId        String
+  project          Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tower            String?
+  floor            Int?
+  type             String         // Biệt thự biển, Căn hộ 2PN
+  price            Decimal        @db.Decimal(15, 2)
+  area             Float
+  bedrooms         Int            @default(1)
+  bathrooms        Int            @default(1)
+  direction        String?
+  view             String?
+  balconyDirection String?
+  handoverStandard String?        // Thô, Cơ bản, Full nội thất
+  discountPolicy   String?
+  status           UnitStatus     @default(AVAILABLE)
+
+  holdingAgentId   String?
+  bookingExpiresAt DateTime?
+
+  bookings         BookingTicket[]
+  contracts        Contract[]
+  auctionRoom      AuctionRoom?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([projectId, status])
+  @@index([price, area])
+}
+
+// -------------------------------------------------------------
+// 4. KHÁCH HÀNG 360 ĐỘ (CUSTOMERS)
+// -------------------------------------------------------------
+enum CustomerRank {
+  DIAMOND_VVIP   // Kim Cương VVIP
+  PLATINUM_VIP   // Bạch Kim VIP
+  POTENTIAL      // Tiềm Năng
+  NEW            // Mới
+}
+
+model Customer {
+  id              String         @id @default(uuid())
+  code            String         @unique // KH-001
+  fullName        String
+  phone           String         @unique
+  email           String?
+  idCardNumber    String?        // CCCD 12 số
+  rank            CustomerRank   @default(NEW)
+  totalRevenue    Decimal        @default(0) @db.Decimal(18, 2)
+  aiHealthScore   Int            @default(50)
+  assignedToId    String
+  assignedTo      User           @relation("AgentCustomers", fields: [assignedToId], references: [id])
+  status          String         @default("Đang tư vấn")
+
+  bookings        BookingTicket[]
+  contracts       Contract[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+// -------------------------------------------------------------
+// 5. BOOKING & QUY TRÌNH DUYỆT 5 BƯỚC (BOOKING WORKFLOW)
+// -------------------------------------------------------------
+enum BookingStage {
+  INIT_SALE
+  MANAGER_APPROVED
+  DIRECTOR_APPROVED
+  ACCOUNTANT_CONFIRMED
+  DONE_LOCKED
+  REJECTED
+}
+
+model BookingTicket {
+  id              String         @id @default(uuid())
+  code            String         @unique // BK-1001
+  customerId      String
+  customer        Customer       @relation(fields: [customerId], references: [id])
+  unitId          String
+  unit            InventoryItem  @relation(fields: [unitId], references: [id])
+  projectId       String
+  project         Project        @relation(fields: [projectId], references: [id])
+  agentId         String
+  agent           User           @relation(fields: [agentId], references: [id])
+
+  depositAmount   Decimal        @db.Decimal(15, 2)
+  bookingType     String         // Có hoàn lại / Không hoàn lại / Ký HĐ Cọc
+  stage           BookingStage   @default(INIT_SALE)
+  priority        String         @default("normal")
+  expiresAt       DateTime       // Đếm ngược SLA 15 phút
+  paymentProofUrl String?        // Ảnh Ủy Nhiệm Chi / VietQR IPN
+  bankRef         String?
+  approvalHistory Json           // Lịch sử duyệt của Sale -> Manager -> Director -> Accountant
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+// -------------------------------------------------------------
+// 6. QUẢN TRỊ HỢP ĐỒNG & e-SIGN (CONTRACTS)
+// -------------------------------------------------------------
+enum ContractStatus {
+  DRAFT
+  PENDING_SIGNATURE
+  SIGNED_ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model Contract {
+  id              String         @id @default(uuid())
+  code            String         @unique // HD-8801
+  type            String         // Hợp đồng cọc, HĐMB
+  customerId      String
+  customer        Customer       @relation(fields: [customerId], references: [id])
+  unitId          String
+  unit            InventoryItem  @relation(fields: [unitId], references: [id])
+  projectId       String
+  project         Project        @relation(fields: [projectId], references: [id])
+  creatorId       String
+  creator         User           @relation(fields: [creatorId], references: [id])
+
+  value           Decimal        @db.Decimal(18, 2)
+  paidAmount      Decimal        @default(0) @db.Decimal(18, 2)
+  paymentProgress Float          @default(0) // 0% - 100%
+  status          ContractStatus @default(PENDING_SIGNATURE)
+  signatureHash   String?        // SHA-256 e-Sign
+  signedAt        DateTime?
+  paymentSchedule Json           // Tiến độ đóng tiền theo đợt
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+// -------------------------------------------------------------
+// 7. ĐẤU GIÁ BẤT ĐỘNG SẢN TRỰC TUYẾN (LIVE AUCTION)
+// -------------------------------------------------------------
+enum AuctionStatus {
+  UPCOMING
+  LIVE
+  ENDED
+  CANCELLED
+}
+
+model AuctionRoom {
+  id              String         @id @default(uuid())
+  code            String         @unique // AUC-101
+  unitId          String         @unique
+  unit            InventoryItem  @relation(fields: [unitId], references: [id])
+  startingPrice   Decimal        @db.Decimal(15, 2)
+  currentBid      Decimal        @db.Decimal(15, 2)
+  reservePrice    Decimal        @db.Decimal(15, 2)
+  bidStep         Decimal        @default(50000000) @db.Decimal(15, 2)
+  escrowDeposit   Decimal        @db.Decimal(15, 2)
+  status          AuctionStatus  @default(UPCOMING)
+  startTime       DateTime
+  endTime         DateTime
+  winningBidderId String?
+
+  bids            AuctionBid[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model AuctionBid {
+  id              String         @id @default(uuid())
+  auctionId       String
+  auction         AuctionRoom    @relation(fields: [auctionId], references: [id])
+  bidderId        String
+  bidderNameMasked String
+  amount          Decimal        @db.Decimal(15, 2)
+  isWinningBid    Boolean        @default(false)
+  timestamp       DateTime       @default(now())
+}
+
+// -------------------------------------------------------------
+// 8. AUDIT LOG AN NINH DOANH NGHIỆP (AUDIT TRAILS)
+// -------------------------------------------------------------
+model AuditLog {
+  id              String         @id @default(uuid())
+  userId          String?
+  user            User?          @relation(fields: [userId], references: [id])
+  action          String         // LOCK_UNIT, APPROVE_BOOKING, SIGN_CONTRACT
+  resource        String         // InventoryItem:NVW-01.01
+  ipAddress       String?
+  payload         Json?
+  createdAt       DateTime       @default(now())
+}
+
+// -------------------------------------------------------------
+// 9. GẠCH NỢ TỰ ĐỘNG VIETQR / NAPAS IPN (PAYMENTS)
+// -------------------------------------------------------------
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  RECONCILED
+}
+
+model PaymentTransaction {
+  id              String         @id @default(uuid())
+  transactionRef  String         @unique // Mã giao dịch ngân hàng
+  bookingCode     String?        // Trích xuất từ nội dung: BK1001
+  contractCode    String?        // Trích xuất từ nội dung: HD8801
+  amount          Decimal        @db.Decimal(15, 2)
+  bankName        String?        // Vietcombank, MB, Techcombank
+  accountNumber   String?
+  transferContent String         // Cú pháp chuyển khoản thực tế
+  gateway         String         @default("VIETQR_NAPAS247")
+  status          PaymentStatus  @default(SUCCESS)
+  rawPayload      Json?          // Webhook payload gốc
+  createdAt       DateTime       @default(now())
+}
+
+// -------------------------------------------------------------
+// 10. NHẬT KÝ THÔNG BÁO TỰ ĐỘNG (NOTIFICATIONS ZNS / SMS)
+// -------------------------------------------------------------
+enum NotificationChannel {
+  ZALO_ZNS
+  SMS
+  EMAIL
+  FIREBASE_PUSH
+}
+
+model NotificationLog {
+  id              String               @id @default(uuid())
+  recipient       String               // Số điện thoại / Email
+  channel         NotificationChannel  @default(ZALO_ZNS)
+  templateId      String?              // Mã mẫu ZNS đã đăng ký Bộ TTTT
+  title           String
+  content         String
+  status          String               @default("SENT") // SENT, FAILED, DELIVERED
+  errorMessage    String?
+  payload         Json?
+  sentAt          DateTime             @default(now())
+}
+
+// -------------------------------------------------------------
+// 11. GIAI ĐOẠN 3: BẢN ĐỒ KHÔNG GIAN GIS & HẠ TẦNG LIÊN VÙNG
+// -------------------------------------------------------------
+model GisLayer {
+  id              String               @id @default(uuid())
+  code            String               @unique // metro-1, ringroad-3, highway, etc.
+  name            String
+  category        String               // TRANSPORT, AIRPORT, PLANNING, HEATMAP
+  color           String?
+  badge           String?
+  geoJson         Json
+  createdAt       DateTime             @default(now())
+}
+
+// -------------------------------------------------------------
+// 12. GIAI ĐOẠN 3: SA BÀN ẢO VR 360 & ĐIỂM CHẠM HOTSPOTS
+// -------------------------------------------------------------
+model PanoramaTour {
+  id              String               @id @default(uuid())
+  projectId       String
+  unitCode        String               @unique // NVW-01.01
+  unitTitle       String
+  type            String
+  price           Decimal              @db.Decimal(15, 2)
+  area            Float
+  bedrooms        Int                  @default(1)
+  bathrooms       Int                  @default(1)
+  location        String
+  rooms           Json                 // Danh sách các phòng, portal, specs
+  zones           Json?                // Phân khu sa bàn 3D
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+}
+
+// -------------------------------------------------------------
+// 13. GIAI ĐOẠN 3: KÝ QUỸ ĐẤU GIÁ ESCROW
+// -------------------------------------------------------------
+model EscrowDeposit {
+  id              String               @id @default(uuid())
+  auctionId       String
+  bidderId        String
+  bidderName      String
+  depositAmount   Decimal              @db.Decimal(15, 2)
+  status          String               @default("HELD") // HELD, REFUNDED, CONVERTED_TO_DOWNPAYMENT
+  transactionRef  String?
+  createdAt       DateTime             @default(now())
+}
+
+// -------------------------------------------------------------
+// 14. GIAI ĐOẠN 3: OCR BÓC TÁCH HỒ SƠ CCCD / SỔ HỒNG (DOCUMENT-AI)
+// -------------------------------------------------------------
+model OcrRecord {
+  id              String               @id @default(uuid())
+  docType         String               // cccd, redbook, passport
+  title           String
+  categoryName    String
+  imageUrl        String?
+  extractedFields Json
+  confidences     Json
+  isValid         Boolean              @default(true)
+  verifiedAt      DateTime?
+  customerId      String?
+  createdAt       DateTime             @default(now())
+}
+
+// -------------------------------------------------------------
+// 15. GIAI ĐOẠN 3: KHO TRI THỨC BĐS & RAG SEMANTIC SEARCH
+// -------------------------------------------------------------
+model KnowledgeDocument {
+  id              String               @id @default(uuid())
+  title           String
+  category        String               // policy, brochure, price, law, faq, planning
+  fileSize        String?
+  projectId       String?
+  contentSummary  String
+  contentRaw      String               @db.Text
+  vectorEmbedding Json?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+}
+
+// -------------------------------------------------------------
+// 16. GIAI ĐOẠN 4: BÀN GIAO & SNAGGING DEFECT (HANDOVER)
+// -------------------------------------------------------------
+model HandoverTicket {
+  id                  String               @id @default(uuid())
+  code                String               @unique // HO-2026-001
+  contractId          String?
+  propertyCode        String
+  projectId           String?
+  projectName         String
+  customerId          String?
+  customerName        String
+  customerPhone       String?
+  customerEmail       String?
+  propertyType        String
+  area                Float
+  scheduledDate       String
+  scheduledTime       String?
+  assignedEngineer    String?
+  status              String               @default("cho_hen") // cho_hen, da_dat_lich, dang_nghiem_thu, da_ban_giao, co_loi_can_sua
+  electricMeterIndex  Float?
+  waterMeterIndex     Float?
+  keysHandedOverCount Int                  @default(0)
+  accessCardsCount    Int                  @default(0)
+  signedDate          String?
+  signedByCustomer    Boolean              @default(false)
+  signedByStaff       Boolean              @default(false)
+  warrantyExpiryDate  String?
+  pinkBookStage       String               @default("tiep_nhan_ho_so") // tiep_nhan_ho_so, nop_so_tnmt, tham_dinh_thue, da_in_phoi_so, da_trao_so
+  pinkBookNumber      String?
+  defectsCount        Int                  @default(0)
+  notes               String?
+  checklist           Json?                // 50 tiêu chí kiến trúc, M&E, nội thất, PCCC
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  defects             SnaggingDefect[]
+}
+
+model SnaggingDefect {
+  id                  String               @id @default(uuid())
+  ticketId            String
+  ticket              HandoverTicket       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  propertyCode        String
+  location            String
+  category            String               // Xây thô & Sơn bả, Sàn & Trần, Cơ điện (M&E), Thiết bị vệ sinh, Cửa & Khóa
+  description         String
+  severity            String               @default("Nhe") // Nhe, Trung Binh, Khan Cap
+  contractor          String
+  status              String               @default("Dang Xu Ly") // Dang Xu Ly, Cho Nghiem Thu, Da Khac Phuc
+  reportedDate        String
+  photoUrls           Json?
+  resolvedDate        String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+}
+
+// -------------------------------------------------------------
+// 17. GIAI ĐOẠN 4: VẬN HÀNH ĐÔ THỊ & DỊCH VỤ CƯ DÂN (OPERATIONS)
+// -------------------------------------------------------------
+model OperationBill {
+  id                  String               @id @default(uuid())
+  billCode            String               @unique // INV-2026-0701
+  month               String               // 07/2026
+  propertyCode        String
+  projectName         String
+  residentName        String
+  residentPhone       String?
+  managementFee       Decimal              @db.Decimal(15, 2)
+  parkingFee          Decimal              @db.Decimal(15, 2)
+  utilitiesFee        Decimal              @db.Decimal(15, 2)
+  totalAmount         Decimal              @db.Decimal(15, 2)
+  status              String               @default("cho_thanh_toan") // da_thanh_toan, cho_thanh_toan, qua_han
+  dueDate             String
+  paidDate            String?
+  paymentMethod       String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+}
+
+model FitoutPermit {
+  id                  String               @id @default(uuid())
+  propertyCode        String
+  residentName        String
+  contractorName      String
+  contractorPhone     String?
+  workersCount        Int                  @default(1)
+  startDate           String
+  endDate             String
+  depositAmount       Decimal              @db.Decimal(15, 2)
+  status              String               @default("cho_duyet") // cho_duyet, dang_thi_cong, cho_nghiem_thu, da_hoan_thanh
+  depositRefunded     Boolean              @default(false)
+  notes               String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+}
+
+model AmenityBooking {
+  id                  String               @id @default(uuid())
+  amenityType         String
+  propertyCode        String
+  residentName        String
+  residentPhone       String?
+  bookingDate         String
+  timeSlot            String
+  guestsCount         Int                  @default(1)
+  status              String               @default("da_xac_nhan") // da_xac_nhan, da_checkin, da_huy
+  createdAt           DateTime             @default(now())
+}
+
+// -------------------------------------------------------------
+// 18. GIAI ĐOẠN 4: THỊ TRƯỜNG THỨ CẤP & CO-BROKERING (RESALE)
+// -------------------------------------------------------------
+model ResaleListing {
+  id                  String               @id @default(uuid())
+  listingCode         String               @unique // KGB-TGM-1502
+  type                String               @default("resale") // resale, rental
+  projectName         String
+  propertyCode        String
+  propertyType        String
+  ownerName           String
+  ownerPhone          String
+  area                Float
+  bedrooms            Int                  @default(1)
+  bathrooms           Int                  @default(1)
+  direction           String?
+  askingPrice         Decimal              @db.Decimal(15, 2)
+  targetNetPrice      Decimal?             @db.Decimal(15, 2)
+  commissionRate      Float                @default(1.5)
+  commissionAmount    Decimal              @db.Decimal(15, 2)
+  legalStatus         String?
+  furnishedStatus     String?
+  keyStatus           String?
+  status              String               @default("active") // active, under_offer, closed, expired
+  exclusiveContract   Boolean              @default(false)
+  exclusiveEndDate    String?
+  viewCount           Int                  @default(0)
+  showingCount        Int                  @default(0)
+  matchedLeadsCount   Int                  @default(0)
+  imageUrl            String?
+  coBrokerSplitRatio  Float                @default(50.0) // 50/50 co-brokering split
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+}
+
+model ClientDemand {
+  id                  String               @id @default(uuid())
+  clientName          String
+  clientPhone         String
+  demandType          String               @default("resale") // resale, rental
+  targetProjects      Json                 // string[]
+  minPrice            Decimal              @db.Decimal(15, 2)
+  maxPrice            Decimal              @db.Decimal(15, 2)
+  bedrooms            Int                  @default(1)
+  purpose             String               // Ở thực, Đầu tư cho thuê, Kinh doanh văn phòng
+  urgency             String               // Cần gấp trong tuần 🔥, Trong tháng này, Tham khảo tìm hiểu
+  assignedAgent       String
+  matchingScore       Float                @default(0)
+  suggestedListingCode String?
+  createdAt           DateTime             @default(now())
+}
+
+// -------------------------------------------------------------
+// 19. GIAI ĐOẠN 4: QUẢN LÝ TÀI SẢN VIP & PHÂN TÍCH TÀI CHÍNH (PORTFOLIO)
+// -------------------------------------------------------------
+model PortfolioAsset {
+  id                  String               @id @default(uuid())
+  code                String               @unique // NVW-01.01
+  title               String
+  projectName         String
+  projectId           String?
+  customerId          String
+  customerName        String
+  customerPhone       String?
+  propertyType        String
+  area                Float
+  bedrooms            Int                  @default(1)
+  bathrooms           Int                  @default(1)
+  direction           String?
+  view                String?
+  buyPrice            Decimal              @db.Decimal(15, 2)
+  currentValuation    Decimal              @db.Decimal(15, 2)
+  purchaseDate        String
+  handoverDate        String
+  constructionProgress Int                 @default(100)
+  constructionStatus  String               // Đang móng cọc, Đang xây thô, Đã cất nóc, Đã bàn giao, Đã có sổ hồng
+  rentalStatus        String               // Đang cho thuê, Tự khai thác, Đang tìm khách, Chờ nhận nhà
+  monthlyRent         Decimal              @db.Decimal(15, 2)
+  tenantName          String?
+  leaseEndDate        String?
+  annualNetRental     Decimal              @db.Decimal(15, 2)
+  contractCode        String
+  legalStatus         String
+  image               String?
+  aiRecommendation    String?              // Tiếp tục giữ tích sản, Chốt lời tái đầu tư, Tối ưu hóa giá thuê, Cơ cấu danh mục
+  aiScore             Int                  @default(85)
+  irr                 Float?               // Internal Rate of Return (%)
+  cagr                Float?               // Compound Annual Growth Rate (%)
+  rentalYield         Float?               // Rental Yield (%)
+  milestones          Json?                // Các đợt đóng tiền & thanh toán
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+}
+
+// -------------------------------------------------------------
+// 20. GIAI ĐOẠN 5: CHIẾN DỊCH TIẾP THỊ & ĐA KÊNH (MARKETING)
+// -------------------------------------------------------------
+model MarketingCampaign {
+  id              String               @id @default(uuid())
+  code            String               @unique // CMP-2026-01
+  name            String
+  platform        String               // Facebook, Google, TikTok, Zalo, Email
+  status          String               @default("Active") // Active, Paused, Completed
+  budget          Decimal              @db.Decimal(15, 2)
+  spent           Decimal              @default(0) @db.Decimal(15, 2)
+  leads           Int                  @default(0)
+  clicks          Int                  @default(0)
+  conversions     Int                  @default(0)
+  startDate       String
+  endDate         String?
+  targetCPL       Decimal?             @db.Decimal(15, 2)
+  routingRule     String               @default("round_robin") // round_robin, top_seller, by_project
+  assignedTeam    String?
+  projectId       String?
+  utmSource       String?
+  utmMedium       String?
+  utmCampaign     String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+}
+
+// -------------------------------------------------------------
+// 21. GIAI ĐOẠN 5: CHƯƠNG TRÌNH KHÁCH HÀNG THÂN THIẾT (LOYALTY)
+// -------------------------------------------------------------
+model LoyaltyVoucher {
+  id              String               @id @default(uuid())
+  code            String               @unique // VCH-NOVA-500
+  title           String
+  points          Int
+  iconName        String               @default("Gift")
+  color           String               @default("emerald")
+  category        String               @default("resort") // resort, dining, golf, discount, spa
+  description     String?
+  expiryDate      String?
+  stock           Int                  @default(100)
+  terms           String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+}
+
+model LoyaltyTransaction {
+  id              String               @id @default(uuid())
+  customerId      String?
+  customerName    String
+  customerPhone   String?
+  type            String               // EARN, REDEEM, ADJUST
+  points          Int                  // Điểm thưởng (+5000, -1500)
+  balanceAfter    Int
+  description     String
+  voucherId       String?
+  referenceCode   String?
+  createdAt       DateTime             @default(now())
+}
+
+// -------------------------------------------------------------
+// 22. GIAI ĐOẠN 5: ĐUA TOP & THI ĐUA KINH DOANH (GAMIFICATION)
+// -------------------------------------------------------------
+model GamificationQuest {
+  id              String               @id @default(uuid())
+  questId         Int                  @unique
+  title           String
+  description     String
+  current         Int                  @default(0)
+  max             Int                  @default(5)
+  exp             Int                  @default(500)
+  category        String               @default("daily") // daily, weekly, special
+  rewardClaimed   Boolean              @default(false)
+  iconName        String               @default("Target")
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+}
+
+model GamificationBadge {
+  id              String               @id @default(uuid())
+  badgeId         Int                  @unique
+  name            String
+  description     String
+  category        String
+  color           String               @default("amber")
+  unlocked        Boolean              @default(false)
+  unlockedDate    String?
+  bonusExp        Int                  @default(1000)
+  rarity          String               @default("Hiếm") // Phổ biến, Hiếm, Sử thi, Huyền thoại
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+}
+
+model GamificationReward {
+  id              String               @id @default(uuid())
+  title           String
+  costExp         Int
+  category        String
+  stock           Int                  @default(10)
+  description     String?
+  image           String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+}
+
+// -------------------------------------------------------------
+// 23. GIAI ĐOẠN 5: SÀN LIÊN KẾT ĐẠI LÝ F1/F2 (MARKETPLACE B2B)
+// -------------------------------------------------------------
+model MarketplaceListing {
+  id                  String           @id @default(uuid())
+  code                String           @unique // MKT-8801
+  title               String
+  price               Decimal          @db.Decimal(15, 2)
+  priceFormatted      String
+  commSplit           String           @default("50/50") // 50/50, 40/60, 60/40, Chỉ nhận khách
+  f2Commission        String           @default("1.5%")
+  f2CommissionRate    Float            @default(1.5)
+  type                String           @default("Bán") // Bán, Cho Thuê
+  propertyCategory    String           @default("Căn hộ") // Căn hộ, Biệt thự, Shophouse, Dinh thự, Tòa nhà VP, Nhà phố
+  location            String
+  district            String
+  ownerAgency         String
+  ownerAvatar         String?
+  ownerPhone          String?
+  image               String?
+  verified            Boolean          @default(true)
+  exclusive           Boolean          @default(false)
+  coBrokeringStatus   String           @default("OPEN") // OPEN, NEGOTIATING, LOCKED, CLOSED
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+}
+
+model AgencyPartner {
+  id                    String         @id @default(uuid())
+  name                  String
+  code                  String         @unique // AGY-001
+  tier                  String         @default("F1") // F1, F2, Strategic
+  phone                 String
+  email                 String?
+  activeListingsCount   Int            @default(0)
+  successfulDealsCount  Int            @default(0)
+  totalCommissionShared Decimal        @default(0) @db.Decimal(15, 2)
+  rating                Float          @default(5.0)
+  verified              Boolean        @default(true)
+  avatar                String?
+  joinedDate            String
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+}
+
+// -------------------------------------------------------------
+// 24. GIAI ĐOẠN 5: ĐO LƯỜNG SỰ HÀI LÒNG NPS/CSAT (SURVEYS)
+// -------------------------------------------------------------
+model SurveyCampaign {
+  id                  String           @id @default(uuid())
+  code                String           @unique // SVY-101
+  name                String
+  trigger             String           // Sau khi xem sa bàn, Sau khi ký HĐMB, Sau khi nhận nhà, Định kỳ hàng quý
+  responsesCount      Int              @default(0)
+  conversion          String           @default("42.5%")
+  status              String           @default("active") // active, paused
+  channel             String           @default("Zalo ZNS") // Zalo ZNS, SMS, Web App, Email
+  targetAudience      String           @default("Khách hàng VVIP & VIP")
+  rewardPoints        Int              @default(200)
+  csatScore           Float            @default(4.8)
+  npsScore            Int              @default(78)
+  formUrl             String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+}
+
+model SurveyFeedback {
+  id                  String           @id @default(uuid())
+  campaignId          String?
+  customerName        String
+  customerPhone       String?
+  propertyCode        String?
+  projectName         String?
+  rating              Int              @default(5)
+  category            String           // Tư vấn, Pháp lý, Bàn giao, Tiện ích, Vận hành
+  sentiment           String           @default("POSITIVE") // POSITIVE, NEUTRAL, NEGATIVE
+  comment             String           @db.Text
+  resolutionStatus    String           @default("RESOLVED") // OPEN, PROCESSING, RESOLVED
+  assignedStaff       String?
+  createdAt           DateTime         @default(now())
+}
+
+// -------------------------------------------------------------
+// 25. GIAI ĐOẠN 5: CÔNG CỤ TÀI CHÍNH TÍN DỤNG (MORTGAGE ENGINE)
+// -------------------------------------------------------------
+model MortgageSimulation {
+  id                    String         @id @default(uuid())
+  customerId            String?
+  customerName          String?
+  propertyCode          String?
+  propertyValue         Decimal        @db.Decimal(15, 2)
+  loanPercent           Float          @default(70.0)
+  loanAmount            Decimal        @db.Decimal(15, 2)
+  loanTermYears         Int            @default(20)
+  bankId                String         @default("vpb")
+  bankName              String         @default("VPBank - Vay Mua Nhà Ưu Đãi")
+  preferentialRate      Float          @default(6.5)
+  preferentialMonths    Int            @default(12)
+  floatingRate          Float          @default(9.8)
+  repaymentMethod       String         @default("reducing") // reducing, linear
+  enableGracePeriod     Boolean        @default(false)
+  graceMonths           Int            @default(0)
+  monthlyIncome         Decimal        @db.Decimal(15, 2)
+  dtiRatio              Float          @default(38.5)
+  monthlyPaymentFirst   Decimal        @db.Decimal(15, 2)
+  totalInterest         Decimal        @db.Decimal(15, 2)
+  amortizationSchedule  Json?
+  createdAt             DateTime       @default(now())
+}
+
+// -------------------------------------------------------------
+// 26. GIAI ĐOẠN 5: PHÂN TÍCH KINH DOANH BI & DỰ BÁO (BI & ANALYTICS)
+// -------------------------------------------------------------
+model BiMetric {
+  id                  String           @id @default(uuid())
+  metricKey           String           @unique // macro_gdv, telesale_heatmap, arima_forecast, conversion_funnel
+  category            String           // EXECUTIVE, TELESALE, FORECAST, PIPELINE
+  title               String
+  value               Json             // Dynamic timeseries, heatmap matrix, funnel counts
+  updatedAt           DateTime         @updatedAt
+}
+
+// -------------------------------------------------------------
+// 27. GIAI ĐOẠN 5: KẾT NỐI NGOẠI VI & WEBHOOK (INTEGRATIONS & ERP)
+// -------------------------------------------------------------
+model IntegrationApp {
+  id                  String           @id @default(uuid())
+  appCode             String           @unique // vietqr, zalo_zns, smartca, misa_erp, sap_s4hana, voip_stringee
+  name                String
+  category            String           // payment, communication, legal, finance, utilities
+  iconName            String           @default("Zap")
+  description         String
+  connected           Boolean          @default(true)
+  lastSync            String?
+  requestCount24h     Int              @default(0)
+  endpoint            String?
+  apiKeyMasked        String?
+  latencyMs           Int              @default(120)
+  provider            String
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+}
+
+model WebhookConfig {
+  id                  String           @id @default(uuid())
+  name                String
+  url                 String
+  events              Json             // ["booking.created", "contract.signed", "payment.received"]
+  secret              String
+  status              String           @default("ACTIVE") // ACTIVE, DISABLED
+  failureCount        Int              @default(0)
+  lastTriggeredAt     DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+}
+
+model ApiKey {
+  id                  String           @id @default(uuid())
+  name                String
+  keyPrefix           String           // nova_live_...
+  hashedSecret        String
+  permissions         Json             // ["read:inventory", "write:bookings", "sync:erp"]
+  rateLimitPerMin     Int              @default(600)
+  status              String           @default("ACTIVE") // ACTIVE, REVOKED
+  lastUsedAt          DateTime?
+  expiresAt           DateTime?
+  createdAt           DateTime         @default(now())
+}
+
+model ApiAuditLog {
+  id                  String           @id @default(uuid())
+  path                String
+  method              String
+  statusCode          Int
+  latencyMs           Int
+  clientIp            String?
+  callerName          String?
+  payloadSummary      String?
+  createdAt           DateTime         @default(now())
+}
+
+
+

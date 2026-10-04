@@ -697,7 +697,7 @@ export default function AIKnowledgePage() {
 
       {/* 4. MODAL 1: Tải Lên & Nhúng Tri Thức Mới */}
       {uploadModalOpen && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full border shadow-2xl overflow-hidden flex flex-col text-slate-800 dark:text-slate-200">
             <div className="p-4 sm:p-5 border-b flex items-center justify-between bg-indigo-50/50 dark:bg-indigo-950/30">
               <div className="flex items-center gap-2">
@@ -787,7 +787,7 @@ export default function AIKnowledgePage() {
 
       {/* 5. MODAL 2: Trích Xuất Chi Tiết Tài Liệu Nguồn (Citation Inspector) */}
       {citationModalOpen && selectedCitation && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full border shadow-2xl overflow-hidden flex flex-col text-slate-800 dark:text-slate-200">
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">
@@ -837,7 +837,7 @@ export default function AIKnowledgePage() {
 
       {/* 6. MODAL 3: Xuất Biên Bản Tư Vấn Khách Hàng */}
       {exportModalOpen && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full border shadow-2xl overflow-hidden flex flex-col text-slate-800 dark:text-slate-200">
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">

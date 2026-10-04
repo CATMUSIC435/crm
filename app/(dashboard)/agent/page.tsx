@@ -22,7 +22,7 @@ import {
   CheckCircle2, CircleDashed, TrendingUp, DollarSign, Users, Briefcase, 
   Phone, Mail, Calendar, ArrowRight, Target, Clock, Sparkles, MapPin,
   Send, Copy, Flame, Building2, Layers, CheckSquare, Plus, Star,
-  Award, ShieldCheck, Check, UserPlus, ExternalLink, Zap
+  Award, ShieldCheck, ShieldAlert, Check, UserPlus, ExternalLink, Zap
 } from "lucide-react"
 import { useStore } from '@/store/useStore'
 import Link from 'next/link'
@@ -54,6 +54,21 @@ export default function AgentDashboard() {
     setToastMessage(msg)
     setTimeout(() => setToastMessage(null), 3500)
   }
+
+  // Cảnh báo hạn chế quyền RBAC từ Edge Proxy
+  const [unauthorizedReason, setUnauthorizedReason] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search).get('unauthorized')
+    }
+    return null
+  })
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const reason = new URLSearchParams(window.location.search).get('unauthorized')
+      if (reason) setUnauthorizedReason(reason)
+    }
+  }, [])
 
   // Modals state
   const [isCheckinModalOpen, setIsCheckinModalOpen] = useState(false)
@@ -184,6 +199,31 @@ export default function AgentDashboard() {
         <div className="fixed top-5 right-5 z-50 flex items-center gap-3 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl border border-slate-700 animate-in slide-in-from-top duration-300">
           <Sparkles className="h-5 w-5 text-amber-400 shrink-0" />
           <p className="text-sm font-medium">{toastMessage}</p>
+        </div>
+      )}
+
+      {/* Cảnh Báo Phân Quyền Bảo Mật RBAC */}
+      {unauthorizedReason && (
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm animate-in fade-in duration-300">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0">
+              <ShieldAlert className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="font-bold text-sm">Hạn chế quyền truy cập phân hệ (RBAC Security Guard)</div>
+              <div className="text-xs text-amber-800 dark:text-amber-300">
+                Tài khoản hiện tại của bạn chưa được cấp thẩm quyền truy cập phân hệ <strong>/{unauthorizedReason}</strong>. Bạn đã được bảo vệ và điều hướng an toàn về Không gian làm việc Môi giới.
+              </div>
+            </div>
+          </div>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="self-end sm:self-center text-xs border-amber-500/40 text-amber-900 dark:text-amber-200 hover:bg-amber-500/20"
+            onClick={() => setUnauthorizedReason(null)}
+          >
+            Đã hiểu
+          </Button>
         </div>
       )}
 

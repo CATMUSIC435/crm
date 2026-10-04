@@ -766,8 +766,14 @@ export default function DocumentsPage() {
 
       {/* 4. MODAL 1: XEM TRƯỚC TÀI LIỆU SỐ HÓA (AUDIT VIEWER) */}
       {selectedDocForPreview && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-3xl w-full border shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div 
+          onClick={() => setSelectedDocForPreview(null)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in-50"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 rounded-2xl max-w-3xl w-full border shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+          >
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-orange-600" />
@@ -885,8 +891,14 @@ export default function DocumentsPage() {
 
       {/* 5. MODAL 2: CHIA SẺ TÀI LIỆU QUA ZALO & MÃ QR 1-CHẠM */}
       {selectedDocForShare && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full border shadow-2xl overflow-hidden flex flex-col">
+        <div 
+          onClick={() => setSelectedDocForShare(null)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in-50"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full border shadow-2xl overflow-hidden flex flex-col"
+          >
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">
                 <Share2 className="h-5 w-5 text-orange-600" />
@@ -954,8 +966,14 @@ export default function DocumentsPage() {
 
       {/* 6. MODAL 3: ĐĂNG TẢI TÀI LIỆU MỚI (UPLOAD MODAL) */}
       {showUploadModal && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full border shadow-2xl overflow-hidden flex flex-col">
+        <div 
+          onClick={() => setShowUploadModal(false)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in-50"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full border shadow-2xl overflow-hidden flex flex-col"
+          >
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">
                 <Upload className="h-5 w-5 text-orange-600" />
@@ -1072,8 +1090,14 @@ export default function DocumentsPage() {
 
       {/* 7. MODAL 4: KIỂM TOÁN PHÁP LÝ & LỊCH SỬ PHIÊN BẢN (AUDIT TRAIL) */}
       {selectedDocForAudit && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full border shadow-2xl overflow-hidden flex flex-col">
+        <div 
+          onClick={() => setSelectedDocForAudit(null)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in-50"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full border shadow-2xl overflow-hidden flex flex-col"
+          >
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-5 w-5 text-emerald-600" />
@@ -1123,8 +1147,14 @@ export default function DocumentsPage() {
 
       {/* 8. MODAL 5: TẢI TRỌN GÓI SALES KIT (BATCH DOWNLOAD MODAL) */}
       {showBatchDownloadModal && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-50">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full border shadow-2xl overflow-hidden flex flex-col">
+        <div 
+          onClick={() => setShowBatchDownloadModal(false)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in-50"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full border shadow-2xl overflow-hidden flex flex-col"
+          >
             <div className="p-4 border-b flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">
                 <FileArchive className="h-5 w-5 text-orange-600" />

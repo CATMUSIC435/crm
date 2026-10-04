@@ -1,0 +1,55 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark Gradient Background -->
+  <rect width="1200" height="630" fill="#0B132B" />
+  <circle cx="150" cy="100" r="300" fill="#1C2541" fill-opacity="0.6" filter="blur(60px)"/>
+  <circle cx="1050" cy="500" r="250" fill="#3A86FF" fill-opacity="0.2" filter="blur(80px)"/>
+  <circle cx="600" cy="315" r="200" fill="#4361EE" fill-opacity="0.1" filter="blur(100px)"/>
+
+  <!-- Grid lines -->
+  <path d="M0 157.5H1200M0 315H1200M0 472.5H1200" stroke="#1E293B" stroke-width="1" stroke-dasharray="6 6"/>
+  <path d="M300 0V630M600 0V630M900 0V630" stroke="#1E293B" stroke-width="1" stroke-dasharray="6 6"/>
+
+  <!-- Badge -->
+  <rect x="100" y="90" width="280" height="40" rx="20" fill="#3B82F6" fill-opacity="0.2" stroke="#60A5FA" stroke-width="1.5"/>
+  <text x="125" y="116" fill="#93C5FD" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" letter-spacing="1.5">ENTERPRISE PROPTECH SUITE</text>
+
+  <!-- Title -->
+  <text x="100" y="210" fill="#FFFFFF" font-family="system-ui, -apple-system, sans-serif" font-size="56" font-weight="900" letter-spacing="-1">NOVA CRM</text>
+  <text x="100" y="275" fill="#38BDF8" font-family="system-ui, -apple-system, sans-serif" font-size="38" font-weight="800">Hệ Sinh Thái Bất Động Sản Toàn Diện</text>
+
+  <!-- Description -->
+  <text x="100" y="345" fill="#94A3B8" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="400">
+    Quản trị rổ hàng thời gian thực • Sa bàn ảo 3D VR 360 • Sàn đấu giá trực tuyến
+  </text>
+  <text x="100" y="380" fill="#94A3B8" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="400">
+    Gạch nợ VietQR Pro 3s • Nghiệm thu bàn giao 50 chỉ tiêu • Quản lý gia sản VIP
+  </text>
+
+  <!-- Feature Tags -->
+  <g transform="translate(100, 440)">
+    <!-- Tag 1 -->
+    <rect x="0" y="0" width="160" height="42" rx="10" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+    <text x="20" y="26" fill="#E2E8F0" font-family="system-ui, sans-serif" font-size="14" font-weight="600">🏢 PostGIS 1/500</text>
+
+    <!-- Tag 2 -->
+    <rect x="180" y="0" width="160" height="42" rx="10" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+    <text x="200" y="26" fill="#E2E8F0" font-family="system-ui, sans-serif" font-size="14" font-weight="600">⚡ Redis Redlock</text>
+
+    <!-- Tag 3 -->
+    <rect x="360" y="0" width="180" height="42" rx="10" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+    <text x="380" y="26" fill="#E2E8F0" font-family="system-ui, sans-serif" font-size="14" font-weight="600">📜 SHA-256 e-Sign</text>
+
+    <!-- Tag 4 -->
+    <rect x="560" y="0" width="170" height="42" rx="10" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+    <text x="580" y="26" fill="#E2E8F0" font-family="system-ui, sans-serif" font-size="14" font-weight="600">💳 VietQR NAPAS</text>
+
+    <!-- Tag 5 -->
+    <rect x="750" y="0" width="190" height="42" rx="10" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+    <text x="770" y="26" fill="#E2E8F0" font-family="system-ui, sans-serif" font-size="14" font-weight="600">🤖 AI RAG Semantic</text>
+  </g>
+
+  <!-- Footer Branding -->
+  <line x1="100" y1="540" x2="1100" y2="540" stroke="#1E293B" stroke-width="1" />
+  <text x="100" y="580" fill="#64748B" font-family="system-ui, sans-serif" font-size="16" font-weight="500">© 2026 NOVA CRM. Nền Tảng PropTech Đẳng Cấp Doanh Nghiệp.</text>
+  <text x="1010" y="580" fill="#3B82F6" font-family="system-ui, sans-serif" font-size="16" font-weight="700">novacrm.vn</text>
+</svg>

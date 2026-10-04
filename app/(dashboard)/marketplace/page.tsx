@@ -834,8 +834,14 @@ export default function MarketplacePage() {
 
       {/* ================= MODAL 1: HỢP ĐỒNG KÝ KẾT BÁN CHÉO CO-BROKERING ================= */}
       {showDistributeModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden">
+        <div 
+          onClick={() => setShowDistributeModal(null)}
+          className="fixed inset-0 z-[1000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden"
+          >
             <div className="bg-slate-900 text-white p-6 flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-bold flex items-center gap-2">
@@ -945,8 +951,14 @@ export default function MarketplacePage() {
 
       {/* ================= MODAL 2: ĐĂNG NGUỒN HÀNG BÁN CHÉO MỚI ================= */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden">
+        <div 
+          onClick={() => setShowCreateModal(false)}
+          className="fixed inset-0 z-[1000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden"
+          >
             <div className="bg-slate-900 text-white p-6 flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-bold flex items-center gap-2">
@@ -1114,8 +1126,14 @@ export default function MarketplacePage() {
 
       {/* ================= MODAL 3: CHI TIẾT SẢN PHẨM ================= */}
       {selectedListingModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden text-xs">
+        <div 
+          onClick={() => setSelectedListingModal(null)}
+          className="fixed inset-0 z-[1000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden text-xs"
+          >
             <div className="relative h-48 bg-slate-900 overflow-hidden">
               <img src={selectedListingModal.image} alt={selectedListingModal.title} className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
@@ -1220,8 +1238,14 @@ export default function MarketplacePage() {
 
       {/* ================= MODAL 4: GỬI LỜI MỜI HỢP TÁC ĐẠI LÝ ================= */}
       {selectedAgencyInviteModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden text-xs">
+        <div 
+          onClick={() => setSelectedAgencyInviteModal(null)}
+          className="fixed inset-0 z-[1000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden text-xs"
+          >
             <div className="bg-slate-900 text-white p-5 flex justify-between items-center">
               <div>
                 <h3 className="text-base font-bold flex items-center gap-2">
