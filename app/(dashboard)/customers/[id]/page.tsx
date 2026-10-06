@@ -1,5 +1,7 @@
 "use client"
-import React, { use, useState } from 'react'
+
+import React, { use, useState, useMemo } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
@@ -9,28 +11,108 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
+import { Progress } from "@/components/ui/progress"
 import { 
   Phone, Mail, MapPin, Briefcase, DollarSign, Building2, Landmark, Compass, 
   Crosshair, ThumbsUp, Globe, UserPlus, PhoneCall, Users, Eye, Bookmark, 
   CreditCard, FileSignature, Home, HeartHandshake, MessageSquare, 
   MessageCircle, FileText, Video, Camera, Glasses,
   BrainCircuit, Star, Zap, UserCheck, Activity, TrendingUp, PieChart, ListChecks, Filter, CheckCircle2,
-  Clock, Calendar, AlertTriangle, QrCode, Share2
+  Clock, Calendar, AlertTriangle, QrCode, Share2, Edit, Award, ExternalLink, Download, ArrowUpRight
 } from "lucide-react"
 import { Timeline } from "@/components/ui/timeline"
 import { AIAssistantDialog } from "@/components/ui/ai-assistant-dialog"
-import { Progress } from "@/components/ui/progress"
 import { useStore } from "@/store/useStore"
 
 export default function Customer360Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const { customers, contracts, inventory, projects, updateCustomer, makeCall } = useStore()
+  const { 
+    customers, contracts, inventory, projects, 
+    portfolioProperties, mortgageSimulations, loyaltyTransactions, callLogs,
+    updateCustomer, makeCall 
+  } = useStore()
   
-  // Resolve customer by ID or fallback to first
-  const customer = customers.find(c => c.id === id) || customers[0]
-  const customerContracts = contracts.filter(c => c.customerId === customer?.id)
-  const customerInventory = inventory.filter(i => i.customerId === customer?.id)
+  // 1. Resolve Customer by ID or Code
+  const customer = customers.find(c => c.id === id || c.code === id) || customers[0]
 
+  // 2. Resolve Related Real Entities from Store / Database
+  const customerContracts = useMemo(() => {
+    return contracts.filter(c => c.customerId === customer?.id)
+  }, [contracts, customer?.id])
+
+  const customerBookings = useMemo(() => {
+    return useStore.getState().bookingTickets.filter(
+      b => b.customerId === customer?.id || (customer?.phone && b.customerPhone === customer?.phone)
+    )
+  }, [customer?.id, customer?.phone])
+
+  const customerPortfolio = useMemo(() => {
+    return (portfolioProperties || []).filter(
+      p => p.customerId === customer?.id || (customer?.phone && p.customerPhone === customer?.phone)
+    )
+  }, [portfolioProperties, customer?.id, customer?.phone])
+
+  const customerMortgages = useMemo(() => {
+    return (mortgageSimulations || []).filter(
+      m => m.customerId === customer?.id || (customer?.name && m.customerName === customer?.name)
+    )
+  }, [mortgageSimulations, customer?.id, customer?.name])
+
+  const customerLoyalty = useMemo(() => {
+    return (loyaltyTransactions || []).filter(
+      l => l.customerId === customer?.id || (customer?.name && l.customerName === customer?.name)
+    )
+  }, [loyaltyTransactions, customer?.id, customer?.name])
+
+  // 3. Dynamic Financial & Wealth Calculations (AUM)
+  const totalPurchasePrice = useMemo(() => {
+    if (customerPortfolio.length > 0) {
+      return customerPortfolio.reduce((sum, p) => sum + p.buyPrice, 0)
+    }
+    if (customerContracts.length > 0) {
+      return customerContracts.reduce((sum, c) => sum + c.value, 0)
+    }
+    return customer?.revenue || 0
+  }, [customerPortfolio, customerContracts, customer?.revenue])
+
+  const totalCurrentValuation = useMemo(() => {
+    if (customerPortfolio.length > 0) {
+      return customerPortfolio.reduce((sum, p) => sum + (p.currentValuation || p.buyPrice), 0)
+    }
+    return totalPurchasePrice * 1.18 // Market benchmark gain
+  }, [customerPortfolio, totalPurchasePrice])
+
+  const totalCapitalGain = totalCurrentValuation - totalPurchasePrice
+  const totalMonthlyRental = useMemo(() => {
+    return customerPortfolio.reduce((sum, p) => sum + (p.monthlyRent || 0), 0)
+  }, [customerPortfolio])
+
+  // 4. Dynamic AI Lead Scoring & Probabilities
+  const leadScore = useMemo(() => {
+    if (customer?.rank === 'VVIP') return 96
+    if (customer?.rank === 'VIP') return 88
+    if (customer?.rank === 'Tiềm Năng') return 72
+    return Math.min(98, Math.max(50, Math.round(52 + (totalPurchasePrice / 1e9) * 1.5)))
+  }, [customer?.rank, totalPurchasePrice])
+
+  const isDealClosed = customer?.status === 'Đã giao dịch' || customerContracts.some(c => c.status === 'Đã ký')
+  const hasActiveBooking = customerBookings.length > 0
+
+  const closingProbability = useMemo(() => {
+    if (isDealClosed) return { text: '100% (Đã Ký HĐMB)', color: 'text-emerald-600', sub: 'Khách hàng thân thiết VIP' }
+    if (hasActiveBooking) return { text: '85% (Đã Giữ Chỗ)', color: 'text-blue-600', sub: 'Đang trong SLA chờ duyệt HĐ' }
+    if (customer?.status === 'Đang tư vấn') return { text: '70% (Tiềm Năng)', color: 'text-amber-600', sub: 'Dự kiến chốt trong 2-3 tuần tới' }
+    return { text: '45% (Đang Tiếp Cận)', color: 'text-slate-600', sub: 'Cần nuôi dưỡng và gửi thêm CSBH' }
+  }, [isDealClosed, hasActiveBooking, customer?.status])
+
+  // Suggested units from inventory based on customer interest
+  const suggestedUnits = useMemo(() => {
+    const available = inventory.filter(i => i.status === 'Trống')
+    if (available.length >= 2) return available.slice(0, 2)
+    return inventory.slice(0, 2)
+  }, [inventory])
+
+  // 5. Interactive Modal & UI State
   const [toastMsg, setToastMsg] = useState<string | null>(null)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [editForm, setEditForm] = useState({
@@ -42,20 +124,34 @@ export default function Customer360Page({ params }: { params: Promise<{ id: stri
     assignedTo: customer?.assignedTo || 'Lê Hoàng Anh'
   })
 
+  // Synchronize editForm when customer changes
+  React.useEffect(() => {
+    if (customer) {
+      setEditForm({
+        name: customer.name || '',
+        phone: customer.phone || '',
+        email: customer.email || '',
+        rank: customer.rank || 'VIP',
+        status: customer.status || 'Đang tư vấn',
+        assignedTo: customer.assignedTo || 'Lê Hoàng Anh'
+      })
+    }
+  }, [customer])
+
   const handleQuickCall = () => {
     if (!customer) return
     makeCall(customer.phone)
-    setToastMsg(`Đang khởi tạo cuộc gọi VoIP đến ${customer.name} (${customer.phone})...`)
+    setToastMsg(`📞 Đang khởi tạo cuộc gọi VoIP tự động tới ${customer.name} (${customer.phone})...`)
     setTimeout(() => {
-      setToastMsg('Cuộc gọi đã hoàn tất và được đồng bộ vào lịch sử!')
+      setToastMsg('✅ Cuộc gọi VoIP đã được đồng bộ vào Call Center và nhật ký CRM!')
       setTimeout(() => setToastMsg(null), 3000)
     }, 2000)
   }
 
   const handleCopyContact = () => {
     if (!customer) return
-    navigator.clipboard.writeText(`KH: ${customer.name} - SĐT: ${customer.phone} - Email: ${customer.email}`)
-    setToastMsg('Đã sao chép thông tin liên hệ vào Clipboard!')
+    navigator.clipboard.writeText(`KH: ${customer.name} - SĐT: ${customer.phone} - Email: ${customer.email} - Phụ trách: ${customer.assignedTo}`)
+    setToastMsg('📋 Đã sao chép toàn bộ thông tin liên hệ vào Clipboard!')
     setTimeout(() => setToastMsg(null), 2500)
   }
 
@@ -64,108 +160,291 @@ export default function Customer360Page({ params }: { params: Promise<{ id: stri
     if (!customer) return
     updateCustomer(customer.id, editForm)
     setIsEditOpen(false)
-    setToastMsg('Đã cập nhật hồ sơ khách hàng thành công!')
-    setTimeout(() => setToastMsg(null), 3000)
+    setToastMsg('🎉 Đã cập nhật thành công hồ sơ khách hàng vào Cơ sở dữ liệu!')
+    setTimeout(() => setToastMsg(null), 3500)
   }
-  
+
+  // 6. Aggregate Real Dynamic Timeline Events
+  const dynamicTimeline = useMemo(() => {
+    const list: any[] = []
+
+    // From Contracts
+    customerContracts.forEach((c) => {
+      const p = projects.find(proj => proj.id === c.projectId)
+      list.push({
+        title: `Ký Hợp Đồng: ${c.code}`,
+        description: `Ký kết thành công ${c.type || 'HĐMB'} căn hộ tại ${p?.name || 'Dự án'}. Giá trị: ${(c.value / 1e9).toFixed(1)} Tỷ VNĐ. Tiến độ thanh toán: ${c.paymentProgress}%.`,
+        time: c.date ? `Ngày ${c.date}` : 'Giao dịch chính thức',
+        status: 'completed',
+        icon: <FileSignature className="text-indigo-600" />
+      })
+    })
+
+    // From Bookings
+    customerBookings.forEach((b) => {
+      list.push({
+        title: `Phiếu Giữ Chỗ (Booking): ${b.code}`,
+        description: `Khách hàng đặt cọc ${(b.depositAmount / 1e6).toLocaleString('vi-VN')} Triệu giữ chỗ căn ${b.unitCode} thuộc ${b.projectName}. Mã giao dịch: ${b.bankRef || 'VCB-QR'}.`,
+        time: b.createdAt || b.time || 'Đã xác nhận',
+        status: 'completed',
+        icon: <Bookmark className="text-orange-500" />
+      })
+    })
+
+    // From Loyalty
+    customerLoyalty.forEach((l) => {
+      list.push({
+        title: `NovaLoyalty: ${l.type === 'earn' ? `+${l.points.toLocaleString('vi-VN')} Điểm` : `-${l.points.toLocaleString('vi-VN')} Điểm`}`,
+        description: l.title,
+        time: l.date || 'Tích lũy điểm',
+        status: 'completed',
+        icon: <Award className="text-amber-500" />
+      })
+    })
+
+    // From Calls / Touchpoints
+    const customerCalls = (callLogs || []).filter(
+      c => c.phone.replace(/\s+/g, '') === customer?.phone?.replace(/\s+/g, '')
+    )
+    customerCalls.forEach((cl) => {
+      list.push({
+        title: `Cuộc Gọi VoIP (${cl.duration})`,
+        description: `Chuyên viên tư vấn trao đổi chính sách chiết khấu và hẹn lịch trải nghiệm sa bàn ảo.`,
+        time: cl.time || 'Hôm nay',
+        status: 'completed',
+        icon: <PhoneCall className="text-emerald-500" />
+      })
+    })
+
+    // Default touchpoints if new lead
+    if (list.length === 0) {
+      list.push(
+        {
+          title: "Khởi tạo hồ sơ khách hàng 360",
+          description: `Đăng ký hồ sơ chăm sóc mới trong hệ thống CRM, phân công cho chuyên viên ${customer?.assignedTo}.`,
+          time: customer?.createdAt || "Giai đoạn tiếp cận",
+          status: "completed",
+          icon: <UserCheck className="text-blue-500" />
+        },
+        {
+          title: "Tư vấn nhu cầu & Gửi Sales Kit",
+          description: `Chuyên viên gửi bảng tính phương án vay ngân hàng và catalog mặt bằng phân khu.`,
+          time: "Gần đây",
+          status: "completed",
+          icon: <MessageCircle className="text-indigo-500" />
+        }
+      )
+    }
+
+    return list
+  }, [customerContracts, customerBookings, customerLoyalty, callLogs, projects, customer])
+
+  // Formatting utility
+  const formatCurrency = (val: number) => {
+    if (val >= 1e9) return `${(val / 1e9).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} Tỷ VNĐ`
+    if (val >= 1e6) return `${(val / 1e6).toLocaleString('vi-VN', { maximumFractionDigits: 0 })} Triệu VNĐ`
+    return `${val.toLocaleString('vi-VN')} VNĐ`
+  }
+
   return (
     <div className="flex flex-col gap-6">
-      {/* Header Profile */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-background p-4 sm:p-6 rounded-lg border shadow-sm">
+      {/* Toast Feedback */}
+      {toastMsg && (
+        <div className="fixed top-20 right-6 z-[1100] bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 border border-slate-700 animate-in fade-in slide-in-from-top-4">
+          <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
+          <span className="text-sm font-medium">{toastMsg}</span>
+        </div>
+      )}
+
+      {/* 1. HEADER PROFILE & COMMAND BAR */}
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border shadow-sm">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-          <Avatar className="h-20 w-20 sm:h-24 sm:w-24 shrink-0 ring-4 ring-primary/10">
-            <AvatarImage src={`https://i.pravatar.cc/150?u=${id}`} />
-            <AvatarFallback>{customer?.name?.substring(0, 2).toUpperCase() || 'KH'}</AvatarFallback>
+          <Avatar className="h-20 w-20 sm:h-24 sm:w-24 shrink-0 ring-4 ring-indigo-50 dark:ring-slate-800 border-2 border-indigo-200">
+            <AvatarImage src={`https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`} />
+            <AvatarFallback className="bg-indigo-600 text-white font-bold text-xl">
+              {customer?.name?.substring(0, 2).toUpperCase() || 'KH'}
+            </AvatarFallback>
           </Avatar>
+
           <div>
-            <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{customer?.name}</h1>
-              <Badge className={customer?.rank === 'VVIP' ? 'bg-amber-500 hover:bg-amber-600' : customer?.rank === 'VIP' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-slate-500'}>
-                {customer?.rank}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                {customer?.name}
+              </h1>
+              <Badge className={
+                customer?.rank === 'VVIP' ? 'bg-amber-500 hover:bg-amber-600 text-white font-bold' : 
+                customer?.rank === 'VIP' ? 'bg-blue-600 hover:bg-blue-700 text-white font-bold' : 
+                'bg-slate-600 text-white'
+              }>
+                {customer?.rank === 'VVIP' ? '👑 VVIP Kim Cương' : customer?.rank === 'VIP' ? '💎 VIP Bạch Kim' : customer?.rank}
               </Badge>
-              <Badge variant="outline" className="text-slate-600">
+              <Badge variant="outline" className="font-mono text-xs border-slate-300">
                 Mã: {customer?.code}
               </Badge>
+              <Badge variant="secondary" className={
+                customer?.status === 'Đã giao dịch' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' :
+                customer?.status === 'Đang tư vấn' ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' :
+                'bg-slate-100 text-slate-700'
+              }>
+                {customer?.status}
+              </Badge>
             </div>
-            <p className="text-muted-foreground mt-2 flex flex-wrap items-center gap-2 text-sm sm:text-base">
-              <Briefcase className="h-4 w-4 shrink-0" /> Chuyên viên phụ trách: <strong className="text-foreground">{customer?.assignedTo}</strong> • Trạng thái: <Badge variant="secondary">{customer?.status}</Badge>
+
+            <p className="text-slate-500 text-xs sm:text-sm mt-2 flex flex-wrap items-center gap-2">
+              <span className="flex items-center gap-1">
+                <Briefcase className="h-3.5 w-3.5 text-indigo-600" /> 
+                Chuyên viên phụ trách: <strong className="text-slate-800 dark:text-slate-200">{customer?.assignedTo}</strong>
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1">
+                <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                Ngày khởi tạo: {customer?.createdAt || '15/01/2024'}
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1 font-semibold text-emerald-600">
+                <DollarSign className="h-3.5 w-3.5" />
+                Tổng giao dịch: {formatCurrency(totalPurchasePrice)}
+              </span>
             </p>
           </div>
         </div>
 
-        {/* QR Code Section */}
-        <div className="flex items-center gap-3 bg-muted/30 p-2 sm:p-3 rounded-xl border border-dashed shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
-          <div className="bg-white p-1.5 rounded-lg shadow-sm border">
-             <QrCode className="h-10 w-10 sm:h-12 sm:w-12 text-slate-800" />
-          </div>
-          <div className="flex flex-col">
-            <p className="text-xs sm:text-sm font-semibold text-primary">Mã giới thiệu</p>
-            <p className="text-[10px] sm:text-xs text-muted-foreground">Quét để đăng ký</p>
-            <div className="flex items-center gap-1 mt-1 text-blue-600 hover:text-blue-700 cursor-pointer">
-              <Share2 className="h-3 w-3" />
-              <span className="text-[10px] font-medium">Chia sẻ</span>
+        {/* Action Buttons & QR Digital Pass */}
+        <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleQuickCall}
+            className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 text-xs font-semibold"
+          >
+            <Phone className="h-3.5 w-3.5 mr-1 text-emerald-600" /> Gọi VoIP
+          </Button>
+
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleCopyContact}
+            className="border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold"
+          >
+            <Share2 className="h-3.5 w-3.5 mr-1 text-slate-500" /> Sao Chép
+          </Button>
+
+          <Button 
+            size="sm" 
+            onClick={() => setIsEditOpen(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm"
+          >
+            <Edit className="h-3.5 w-3.5 mr-1" /> Chỉnh Sửa Hồ Sơ
+          </Button>
+
+          {/* QR Digital Pass */}
+          <div className="hidden sm:flex items-center gap-2.5 bg-slate-50 dark:bg-slate-800/60 p-2 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div className="bg-white p-1 rounded-md shadow-xs border">
+              <QrCode className="h-8 w-8 text-slate-900" />
+            </div>
+            <div className="text-[11px] leading-tight">
+              <span className="font-bold text-slate-800 dark:text-slate-200 block">QR Digital Pass</span>
+              <span className="text-slate-400 font-mono">{customer?.code}</span>
             </div>
           </div>
         </div>
       </div>
 
+      {/* 2. MAIN NAVIGATION TABS */}
       <Tabs defaultValue="overview" className="w-full">
-        <div className="flex overflow-x-auto pb-2 pt-2 px-2 scrollbar-hide border-b mb-6">
+        <div className="flex overflow-x-auto pb-2 scrollbar-hide border-b mb-6">
           <TabsList className="h-11 bg-transparent p-0 gap-2">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none rounded-full px-5">Tổng Quan</TabsTrigger>
-            <TabsTrigger value="finance" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none rounded-full px-5">Tài Chính & Đầu Tư</TabsTrigger>
-            <TabsTrigger value="preferences" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none rounded-full px-5">Sở Thích & Nhu Cầu</TabsTrigger>
-            <TabsTrigger value="identity" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none rounded-full px-5">Định Danh</TabsTrigger>
-            <TabsTrigger value="journey" className="relative data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none rounded-full px-5">
-              Hành Trình
-              <span className="absolute top-1 right-2 flex h-2 w-2 rounded-full bg-blue-500"></span>
+            <TabsTrigger value="overview" className="data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 dark:data-[state=active]:bg-indigo-950/60 dark:data-[state=active]:text-indigo-300 rounded-full px-5 text-xs font-bold">
+              Tổng Quan 360°
             </TabsTrigger>
-            <TabsTrigger value="timeline" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none rounded-full px-5">Lịch Sử Tương Tác</TabsTrigger>
+            <TabsTrigger value="finance" className="data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 dark:data-[state=active]:bg-indigo-950/60 dark:data-[state=active]:text-indigo-300 rounded-full px-5 text-xs font-bold">
+              Tài Chính & Danh Mục BĐS ({customerPortfolio.length || customerContracts.length})
+            </TabsTrigger>
+            <TabsTrigger value="preferences" className="data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 dark:data-[state=active]:bg-indigo-950/60 dark:data-[state=active]:text-indigo-300 rounded-full px-5 text-xs font-bold">
+              Sở Thích & Nhu Cầu
+            </TabsTrigger>
+            <TabsTrigger value="identity" className="data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 dark:data-[state=active]:bg-indigo-950/60 dark:data-[state=active]:text-indigo-300 rounded-full px-5 text-xs font-bold">
+              Định Danh & eKYC Pháp Lý
+            </TabsTrigger>
+            <TabsTrigger value="journey" className="relative data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 dark:data-[state=active]:bg-indigo-950/60 dark:data-[state=active]:text-indigo-300 rounded-full px-5 text-xs font-bold">
+              Hành Trình Bán Hàng
+              <span className="absolute top-1.5 right-1.5 flex h-2 w-2 rounded-full bg-indigo-500"></span>
+            </TabsTrigger>
+            <TabsTrigger value="timeline" className="data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 dark:data-[state=active]:bg-indigo-950/60 dark:data-[state=active]:text-indigo-300 rounded-full px-5 text-xs font-bold">
+              Nhật Ký Tương Tác ({dynamicTimeline.length})
+            </TabsTrigger>
           </TabsList>
         </div>
 
-        {/* 1. TỔNG QUAN */}
+        {/* ========================================================
+            TAB 1: TỔNG QUAN 360°
+        ======================================================== */}
         <TabsContent value="overview" className="space-y-6 outline-none">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* AI Insights & Health Score */}
+            
+            {/* AI Insights & Profile Health */}
             <div className="lg:col-span-2 space-y-6">
-              <Card className="bg-primary/5 border-primary/20">
-                <CardHeader className="pb-3">
+              <Card className="bg-gradient-to-br from-indigo-50/60 via-white to-purple-50/40 dark:from-slate-900 dark:to-indigo-950/30 border-indigo-100 dark:border-indigo-900/50 shadow-sm">
+                <CardHeader className="pb-3 border-b border-indigo-100/60 dark:border-slate-800">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <CardTitle className="text-lg font-bold flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
-                      <BrainCircuit className="h-5 w-5" />
-                      Phân Tích AI CRM
+                    <CardTitle className="text-base font-bold flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
+                      <BrainCircuit className="h-5 w-5 text-indigo-600 animate-pulse" />
+                      Phân Tích AI CRM Thời Gian Thực
                     </CardTitle>
-                    <Badge variant="outline" className="bg-background text-indigo-600 border-indigo-200">Độ tin cậy: 92%</Badge>
+                    <Badge variant="outline" className="bg-white dark:bg-slate-800 text-indigo-700 border-indigo-200 text-xs">
+                      Mô hình RAG Embeddings 99.4%
+                    </Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="grid gap-6 sm:grid-cols-2">
+                <CardContent className="pt-4 grid gap-6 sm:grid-cols-2 text-xs">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-2"><Star className="h-4 w-4"/> Chấm điểm Lead</p>
+                    <p className="font-semibold text-slate-500 flex items-center gap-1.5 mb-2">
+                      <Star className="h-4 w-4 text-amber-500 fill-amber-500" /> Điểm Đánh Giá Tiềm Năng (Lead Score)
+                    </p>
                     <div className="flex items-center gap-3">
-                      <Progress value={85} className="h-2 w-full" />
-                      <span className="font-bold text-lg">85</span>
+                      <Progress value={leadScore} className="h-2.5 w-full bg-slate-100" />
+                      <span className="font-black text-lg text-indigo-600">{leadScore}/100</span>
                     </div>
+                    <p className="text-[11px] text-slate-400 mt-1">Dựa trên tài sản tích lũy và tần suất tương tác</p>
                   </div>
+
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-2"><Zap className="h-4 w-4"/> Dự đoán khả năng chốt</p>
-                    <p className="text-xl font-bold text-green-600">Cao (75%)</p>
-                    <p className="text-xs text-muted-foreground mt-1">Dự kiến trong 2 tuần tới</p>
+                    <p className="font-semibold text-slate-500 flex items-center gap-1.5 mb-1.5">
+                      <Zap className="h-4 w-4 text-amber-500" /> Khả Năng Chốt Giao Dịch
+                    </p>
+                    <p className={`text-base font-bold ${closingProbability.color}`}>
+                      {closingProbability.text}
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">{closingProbability.sub}</p>
                   </div>
+
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-2"><Building2 className="h-4 w-4"/> Gợi ý sản phẩm</p>
+                    <p className="font-semibold text-slate-500 flex items-center gap-1.5 mb-2">
+                      <Building2 className="h-4 w-4 text-indigo-600" /> Gợi Ý Giỏ Hàng Trống Phù Hợp
+                    </p>
                     <div className="flex flex-wrap gap-2">
-                      <Badge className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border-0">Biệt thự ven sông</Badge>
-                      <Badge variant="secondary">Căn góc Aqua City</Badge>
+                      {suggestedUnits.map((u) => (
+                        <Link key={u.id} href="/inventory">
+                          <Badge className="bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 border-0 cursor-pointer">
+                            {u.code} • {u.type} ({(u.price / 1e9).toFixed(1)} Tỷ)
+                          </Badge>
+                        </Link>
+                      ))}
                     </div>
                   </div>
+
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-2"><UserCheck className="h-4 w-4"/> Gợi ý Sale phù hợp</p>
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-8 w-8"><AvatarImage src="https://i.pravatar.cc/150?u=sale1" /><AvatarFallback>M</AvatarFallback></Avatar>
+                    <p className="font-semibold text-slate-500 flex items-center gap-1.5 mb-2">
+                      <UserCheck className="h-4 w-4 text-emerald-600" /> Chuyên Viên Tư Vấn Phụ Trách
+                    </p>
+                    <div className="flex items-center gap-2.5">
+                      <Avatar className="h-8 w-8 ring-2 ring-indigo-200">
+                        <AvatarImage src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150" />
+                        <AvatarFallback>HA</AvatarFallback>
+                      </Avatar>
                       <div>
-                        <p className="text-sm font-medium">Minh Phương</p>
-                        <p className="text-[10px] text-muted-foreground">Chuyên gia BĐS nghỉ dưỡng</p>
+                        <p className="font-bold text-slate-800 dark:text-slate-200">{customer?.assignedTo || 'Lê Hoàng Anh'}</p>
+                        <p className="text-[10px] text-slate-500">Chuyên viên tư vấn cấp cao (Top 1 Sàn Q1)</p>
                       </div>
                     </div>
                   </div>
@@ -173,31 +452,41 @@ export default function Customer360Page({ params }: { params: Promise<{ id: stri
               </Card>
 
               {/* Health Score */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5 text-primary" /> Sức Khỏe Hồ Sơ (Health Score)</CardTitle>
+              <Card className="shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-800 dark:text-slate-200">
+                    <Activity className="h-5 w-5 text-emerald-600" /> Sức Khỏe Hồ Sơ Khách Hàng (Customer Health Score)
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="font-medium">Năng lực tài chính</span>
-                      <span className="font-bold text-green-600">Rất Tốt</span>
+                <CardContent className="space-y-5 text-xs">
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between font-semibold">
+                      <span className="text-slate-600">Năng lực tài chính & Khả năng thanh toán</span>
+                      <span className="font-bold text-emerald-600">
+                        {totalPurchasePrice >= 20e9 ? 'Xuất Sắc (VVIP)' : totalPurchasePrice >= 10e9 ? 'Rất Tốt (VIP)' : 'Đầy Đủ'}
+                      </span>
                     </div>
-                    <Progress value={90} className="h-2 [&>div]:bg-green-600" />
+                    <Progress value={totalPurchasePrice >= 20e9 ? 95 : totalPurchasePrice >= 10e9 ? 85 : 65} className="h-2 [&>div]:bg-emerald-600" />
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="font-medium">Mức độ quan tâm dự án</span>
-                      <span className="font-bold text-blue-600">Cao</span>
+
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between font-semibold">
+                      <span className="text-slate-600">Mức độ tương tác & Quan tâm dự án</span>
+                      <span className="font-bold text-blue-600">
+                        {customerContracts.length > 0 ? 'Rất Cao (Đã ký kết)' : customerBookings.length > 0 ? 'Cao (Đang giữ chỗ)' : 'Đang tìm hiểu'}
+                      </span>
                     </div>
-                    <Progress value={75} className="h-2 [&>div]:bg-blue-600" />
+                    <Progress value={customerContracts.length > 0 ? 92 : customerBookings.length > 0 ? 80 : 55} className="h-2 [&>div]:bg-blue-600" />
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="font-medium">Độ cấp thiết mua (Urgency)</span>
-                      <span className="font-bold text-orange-500">Trung bình</span>
+
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between font-semibold">
+                      <span className="text-slate-600">Độ cấp thiết giao dịch (Urgency SLA)</span>
+                      <span className="font-bold text-amber-600">
+                        {hasActiveBooking ? 'Cấp thiết (Trong SLA giữ chỗ)' : 'Tiêu chuẩn'}
+                      </span>
                     </div>
-                    <Progress value={50} className="h-2 [&>div]:bg-orange-500" />
+                    <Progress value={hasActiveBooking ? 85 : 50} className="h-2 [&>div]:bg-amber-500" />
                   </div>
                 </CardContent>
               </Card>
@@ -205,491 +494,699 @@ export default function Customer360Page({ params }: { params: Promise<{ id: stri
 
             {/* Quick Contact & Summary */}
             <div className="lg:col-span-1 space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Liên Hệ Nhanh</CardTitle>
+              <Card className="shadow-sm">
+                <CardHeader className="pb-3 border-b">
+                  <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-200">
+                    Kênh Liên Hệ Nhanh
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                    <Phone className="h-5 w-5 text-primary shrink-0" />
+                <CardContent className="pt-4 space-y-3.5 text-xs">
+                  <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <Phone className="h-5 w-5 text-indigo-600 shrink-0" />
                     <div>
-                      <p className="text-xs text-muted-foreground">Điện thoại</p>
-                      <p className="font-semibold">{customer?.phone}</p>
+                      <p className="text-[11px] text-slate-400">Số điện thoại chính</p>
+                      <p className="font-bold font-mono text-sm text-slate-800 dark:text-slate-200">{customer?.phone}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                    <Mail className="h-5 w-5 text-primary shrink-0" />
+
+                  <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <Mail className="h-5 w-5 text-indigo-600 shrink-0" />
                     <div>
-                      <p className="text-xs text-muted-foreground">Email</p>
-                      <p className="font-semibold break-all">{customer?.email}</p>
+                      <p className="text-[11px] text-slate-400">Email giao dịch</p>
+                      <p className="font-bold text-sm text-slate-800 dark:text-slate-200 break-all">{customer?.email || 'Chưa cập nhật'}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                    <MapPin className="h-5 w-5 text-primary shrink-0" />
+
+                  <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <MapPin className="h-5 w-5 text-indigo-600 shrink-0" />
                     <div>
-                      <p className="text-xs text-muted-foreground">Địa chỉ</p>
-                      <p className="font-semibold">TP. Hồ Chí Minh</p>
+                      <p className="text-[11px] text-slate-400">Địa chỉ thường trú</p>
+                      <p className="font-bold text-sm text-slate-800 dark:text-slate-200">Khu Đô Thị Thảo Điền, TP. Thủ Đức, TP.HCM</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <Landmark className="h-5 w-5 text-indigo-600 shrink-0" />
+                    <div>
+                      <p className="text-[11px] text-slate-400">Ngân hàng liên kết</p>
+                      <p className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                        {customerMortgages[0]?.bankName || 'Vietcombank'} (Số TK VIP: 007100...98)
+                      </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Loyalty Quick Badge */}
+              <Card className="bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border-amber-200 dark:border-amber-900/40">
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                      <Award className="h-4 w-4 text-amber-600" /> Hạng Thẻ NovaLoyalty
+                    </span>
+                    <Badge className="bg-amber-500 text-white font-black text-[10px]">
+                      {customer?.rank === 'VVIP' ? 'DIAMOND ELITE' : 'PLATINUM VIP'}
+                    </Badge>
+                  </div>
+                  <div className="text-2xl font-black text-amber-600 font-mono">
+                    {customerLoyalty.reduce((sum, l) => sum + (l.type === 'earn' ? l.points : -l.points), 135000).toLocaleString('vi-VN')} PTS
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Đặc quyền: Phòng chờ thương gia sân bay, chiết khấu +2% khi booking sớm.
+                  </p>
+                </CardContent>
+              </Card>
             </div>
+
           </div>
         </TabsContent>
 
-        {/* 2. TÀI CHÍNH */}
+        {/* ========================================================
+            TAB 2: TÀI CHÍNH & DANH MỤC BẤT ĐỘNG SẢN SỞ HỮU
+        ======================================================== */}
         <TabsContent value="finance" className="space-y-6 outline-none">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2"><PieChart className="h-5 w-5 text-blue-600" /> Phân Bổ Tài Sản</CardTitle>
-                <CardDescription>Cơ cấu tài sản ước tính của khách hàng ({customer?.revenue ? `${(customer.revenue / 1e9).toFixed(1)} Tỷ VNĐ` : 'Chưa ghi nhận'})</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-sm"><div className="w-3 h-3 rounded-full bg-blue-500"></div> Bất động sản</span>
-                    <span className="font-bold">60%</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-sm"><div className="w-3 h-3 rounded-full bg-green-500"></div> Tiền mặt / Tiết kiệm</span>
-                    <span className="font-bold">25%</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-sm"><div className="w-3 h-3 rounded-full bg-orange-500"></div> Cổ phiếu / Khác</span>
-                    <span className="font-bold">15%</span>
-                  </div>
-                  
-                  {/* Mock Stacked Bar Chart */}
-                  <div className="h-4 w-full flex rounded-full overflow-hidden mt-4">
-                    <div className="h-full bg-blue-500" style={{ width: '60%' }}></div>
-                    <div className="h-full bg-green-500" style={{ width: '25%' }}></div>
-                    <div className="h-full bg-orange-500" style={{ width: '15%' }}></div>
-                  </div>
-                </div>
+          {/* Wealth Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="bg-white dark:bg-slate-900 shadow-sm border-slate-200">
+              <CardContent className="p-4">
+                <p className="text-xs text-slate-500 font-medium">Tổng Giá Trị Mua Gốc</p>
+                <p className="text-xl font-black text-slate-900 dark:text-white mt-1">
+                  {formatCurrency(totalPurchasePrice)}
+                </p>
+                <p className="text-[11px] text-slate-400 mt-1">Theo hợp đồng mua bán chính thức</p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5 text-purple-600" /> Đánh Giá Tín Dụng (Credit Check)</CardTitle>
-                <CardDescription>Luồng xét duyệt năng lực vay vốn ngân hàng</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between mb-4 bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+            <Card className="bg-white dark:bg-slate-900 shadow-sm border-slate-200">
+              <CardContent className="p-4">
+                <p className="text-xs text-slate-500 font-medium">Định Giá Thị Trường Hiện Tại</p>
+                <p className="text-xl font-black text-indigo-600 mt-1">
+                  {formatCurrency(totalCurrentValuation)}
+                </p>
+                <p className="text-[11px] text-emerald-600 font-bold mt-1 flex items-center gap-1">
+                  <ArrowUpRight className="h-3 w-3" /> Lãi vốn: +{formatCurrency(totalCapitalGain)}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white dark:bg-slate-900 shadow-sm border-slate-200">
+              <CardContent className="p-4">
+                <p className="text-xs text-slate-500 font-medium">Dòng Tiền Cho Thuê / Tháng</p>
+                <p className="text-xl font-black text-emerald-600 mt-1">
+                  {totalMonthlyRental > 0 ? `${(totalMonthlyRental / 1e6).toFixed(0)} Tr / tháng` : '107 Tr / tháng'}
+                </p>
+                <p className="text-[11px] text-slate-400 mt-1">Từ 2 bất động sản đang ủy thác vận hành</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white dark:bg-slate-900 shadow-sm border-slate-200">
+              <CardContent className="p-4">
+                <p className="text-xs text-slate-500 font-medium">Dư Nợ Vay Ngân Hàng</p>
+                <p className="text-xl font-black text-purple-600 mt-1">
+                  {customerMortgages[0]?.loanAmount ? formatCurrency(customerMortgages[0].loanAmount) : '10.15 Tỷ VNĐ'}
+                </p>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  {customerMortgages[0]?.bankName || 'MBBank'} (Ân hạn nợ gốc 24 tháng)
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            {/* Real Portfolio Properties Cards (7 cols) */}
+            <Card className="lg:col-span-7 shadow-sm">
+              <CardHeader className="pb-3 border-b">
+                <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-purple-700 dark:text-purple-300 font-medium">Hạn mức vay dự kiến</p>
-                    <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">5.0 - 15.0 Tỷ</p>
+                    <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                      <Home className="h-5 w-5 text-indigo-600" /> Danh Mục Bất Động Sản Khách Hàng Sở Hữu
+                    </CardTitle>
+                    <CardDescription className="text-xs text-slate-500">
+                      Tài sản đã bàn giao, có sổ hồng hoặc đang xây dựng được quản lý trên hệ thống
+                    </CardDescription>
                   </div>
-                  <Badge className="bg-green-500">Điểm CIC: Hạng A</Badge>
+                  <Link href="/portfolio">
+                    <Button variant="ghost" size="sm" className="text-xs text-indigo-600">
+                      Xem Portfolio 360° <ExternalLink className="h-3 w-3 ml-1" />
+                    </Button>
+                  </Link>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-4 space-y-4">
+                {customerPortfolio.length > 0 ? (
+                  customerPortfolio.map((p) => (
+                    <div key={p.id} className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50 dark:bg-slate-900/50 hover:border-indigo-300 transition-all flex flex-col sm:flex-row gap-4">
+                      <div className="w-full sm:w-36 h-28 rounded-lg overflow-hidden shrink-0 bg-slate-200">
+                        <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 space-y-1.5 text-xs">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <span className="font-mono font-bold text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 rounded text-[11px]">
+                              {p.code}
+                            </span>
+                            <span className="text-xs text-slate-500 ml-2 font-medium">{p.projectName}</span>
+                          </div>
+                          <Badge variant="outline" className="text-[10px] text-emerald-700 border-emerald-300 bg-emerald-50">
+                            {p.rentalStatus || p.constructionStatus}
+                          </Badge>
+                        </div>
+                        <h4 className="font-bold text-slate-900 dark:text-white text-sm">{p.title}</h4>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-slate-500">
+                          <span>Diện tích: <strong>{p.area} m²</strong></span>
+                          <span>Hướng: <strong>{p.direction}</strong></span>
+                          <span>Thuê: <strong className="text-emerald-600">{p.monthlyRent ? `${(p.monthlyRent / 1e6).toFixed(0)} Tr/tháng` : 'Chưa cho thuê'}</strong></span>
+                        </div>
+                        <div className="pt-2 border-t flex items-center justify-between">
+                          <div>
+                            <span className="text-[11px] text-slate-400">Giá mua: </span>
+                            <span className="font-semibold">{formatCurrency(p.buyPrice)}</span>
+                          </div>
+                          <div>
+                            <span className="text-[11px] text-slate-400">Định giá: </span>
+                            <span className="font-bold text-indigo-600">{formatCurrency(p.currentValuation)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-slate-400">
+                    <Building2 className="h-10 w-10 mx-auto mb-2 text-slate-300" />
+                    <p className="text-xs">Chưa có tài sản trong danh mục quản lý gia sản.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Credit Assessment & Banking Support (5 cols) */}
+            <Card className="lg:col-span-5 shadow-sm">
+              <CardHeader className="pb-3 border-b">
+                <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                  <CreditCard className="h-5 w-5 text-purple-600" /> Đánh Giá Năng Lực Tín Dụng & Hồ Sơ Vay
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-500">
+                  Dữ liệu đối soát từ công cụ thẩm định Mortgage Simulation
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-4 space-y-4 text-xs">
+                <div className="p-4 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900 rounded-xl space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-purple-900 dark:text-purple-200">
+                      Ngân Hàng Tài Trợ: {customerMortgages[0]?.bankName || 'MBBank'}
+                    </span>
+                    <Badge className="bg-emerald-600 text-white font-bold text-[10px]">
+                      CIC Hạng A (Rất Tốt)
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-baseline pt-1">
+                    <span className="text-slate-600">Hạn mức vay đã phê duyệt:</span>
+                    <span className="text-lg font-black text-purple-700 dark:text-purple-300">
+                      {customerMortgages[0]?.loanAmount ? formatCurrency(customerMortgages[0].loanAmount) : '10.15 Tỷ VNĐ'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-purple-200/60 text-[11px] text-slate-600">
+                    <div>Tỷ lệ tài trợ: <strong>{customerMortgages[0]?.loanPercent || 70}%</strong></div>
+                    <div>Thời hạn: <strong>{customerMortgages[0]?.loanTermYears || 25} năm</strong></div>
+                    <div>Thu nhập: <strong>{customerMortgages[0]?.monthlyIncome ? `${customerMortgages[0].monthlyIncome / 1e6} Tr/tháng` : '180 Tr/tháng'}</strong></div>
+                    <div>Tỷ lệ DTI: <strong className="text-emerald-600">{customerMortgages[0]?.dtiRatio || 26.5}% (An toàn)</strong></div>
+                  </div>
                 </div>
 
-                <div className="relative border-l-2 border-muted ml-3 space-y-5">
-                  <div className="relative pl-6">
-                    <span className="absolute -left-[9px] top-1 h-4 w-4 rounded-full bg-green-500 ring-4 ring-background"></span>
-                    <p className="font-medium text-sm">Cung cấp hồ sơ thu nhập</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Đã nộp sao kê lương & HĐLĐ</p>
-                  </div>
-                  <div className="relative pl-6">
-                    <span className="absolute -left-[9px] top-1 h-4 w-4 rounded-full bg-green-500 ring-4 ring-background"></span>
-                    <p className="font-medium text-sm">Kiểm tra CIC</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Không có nợ xấu trong 5 năm gần nhất</p>
-                  </div>
-                  <div className="relative pl-6">
-                    <span className="absolute -left-[9px] top-1 h-4 w-4 rounded-full bg-blue-500 ring-4 ring-background"></span>
-                    <p className="font-medium text-sm">Thẩm định giá tài sản đảm bảo</p>
-                    <p className="text-xs text-blue-600 mt-0.5">Đang xử lý (NH Vietcombank)</p>
-                  </div>
-                  <div className="relative pl-6">
-                    <span className="absolute -left-[9px] top-1 h-4 w-4 rounded-full bg-slate-300 ring-4 ring-background"></span>
-                    <p className="font-medium text-sm text-muted-foreground">Phê duyệt giải ngân</p>
+                <div className="space-y-3">
+                  <h5 className="font-bold text-slate-800 dark:text-slate-200">Lộ Trình Thẩm Định Hồ Sơ Tín Dụng:</h5>
+                  <div className="space-y-2.5 border-l-2 border-slate-200 ml-2 pl-3">
+                    <div className="flex items-center gap-2 text-emerald-600 font-medium">
+                      <CheckCircle2 className="h-4 w-4" /> Sao kê tài khoản & HĐLĐ cấp quản lý (Hợp lệ)
+                    </div>
+                    <div className="flex items-center gap-2 text-emerald-600 font-medium">
+                      <CheckCircle2 className="h-4 w-4" /> Tra cứu CIC Quốc Gia (Không nợ xấu 5 năm)
+                    </div>
+                    <div className="flex items-center gap-2 text-indigo-600 font-medium">
+                      <CheckCircle2 className="h-4 w-4" /> Thẩm định tài sản bảo đảm HĐMB (Hoàn tất)
+                    </div>
+                    <div className="flex items-center gap-2 text-emerald-700 font-bold">
+                      <CheckCircle2 className="h-4 w-4" /> Ban hành thông báo cho vay chính thức (Sẵn sàng giải ngân)
+                    </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Danh Sách Hợp Đồng Của Khách Hàng */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileSignature className="h-5 w-5 text-indigo-600" /> Hợp Đồng & BĐS Sở Hữu
-                </CardTitle>
-                <CardDescription>Các giao dịch và tài sản của khách hàng tại các dự án NovaCRM</CardDescription>
+            {/* Contracts List (12 cols) */}
+            <Card className="lg:col-span-12 shadow-sm">
+              <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                    <FileSignature className="h-5 w-5 text-indigo-600" /> Danh Sách Hợp Đồng Mua Bán Đã Ký Kết
+                  </CardTitle>
+                  <CardDescription className="text-xs text-slate-500">
+                    Liên kết trực tiếp với phân hệ Quản Lý Hợp Đồng & Lịch Trình Thanh Toán
+                  </CardDescription>
+                </div>
+                <Link href="/contracts">
+                  <Button variant="ghost" size="sm" className="text-xs text-indigo-600">
+                    Sổ Hợp Đồng Toàn Sàn <ExternalLink className="h-3 w-3 ml-1" />
+                  </Button>
+                </Link>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-4">
                 {customerContracts.length > 0 ? (
-                  <div className="divide-y border rounded-lg overflow-hidden">
+                  <div className="divide-y border rounded-xl overflow-hidden text-xs">
                     {customerContracts.map((c) => {
                       const project = projects.find(p => p.id === c.projectId)
                       const unit = inventory.find(i => i.id === c.inventoryId)
                       return (
-                        <div key={c.id} className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 hover:bg-muted/50">
-                          <div>
+                        <div key={c.id} className="p-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 hover:bg-slate-50/80 transition-colors">
+                          <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                              <span className="font-bold text-base">{c.code}</span>
+                              <span className="font-mono font-bold text-sm text-indigo-700">{c.code}</span>
                               <Badge variant="outline">{c.type || 'HĐ Mua Bán'}</Badge>
-                              <Badge className={c.status === 'Đã ký' ? 'bg-green-500 hover:bg-green-600' : 'bg-amber-500 hover:bg-amber-600'}>{c.status}</Badge>
+                              <Badge className={c.status === 'Đã ký' ? 'bg-emerald-600 text-white' : 'bg-amber-500 text-white'}>
+                                {c.status}
+                              </Badge>
+                              <span className="text-slate-400">• Ngày ký: {c.date || '01/12/2023'}</span>
                             </div>
-                            <div className="text-sm text-muted-foreground mt-1">
-                              Dự án: <strong className="text-foreground">{project?.name || 'Dự án'}</strong> • Mã căn: <strong className="text-foreground">{unit?.code || c.inventoryId}</strong> ({unit?.type || 'Căn hộ'})
+                            <div className="text-slate-600">
+                              Dự án: <strong className="text-slate-900">{project?.name || 'NovaWorld Phan Thiet'}</strong> • Căn: <strong className="text-slate-900">{unit?.code || c.inventoryId}</strong> ({unit?.type || 'Biệt thự biển'})
+                            </div>
+                            <div className="text-slate-400 text-[11px]">
+                              Người ký: {c.signer} • Ngân hàng bảo lãnh: {c.bankSupport || 'Vietcombank'}
                             </div>
                           </div>
-                          <div className="text-left sm:text-right">
-                            <div className="text-lg font-bold text-indigo-600">{(c.value / 1e9).toFixed(1)} Tỷ VNĐ</div>
-                            <div className="text-xs text-muted-foreground">Tiến độ thanh toán: {c.paymentProgress || 0}%</div>
+
+                          <div className="flex items-center gap-6 self-end lg:self-center">
+                            <div className="text-right">
+                              <div className="text-base font-black text-indigo-600">{formatCurrency(c.value)}</div>
+                              <div className="text-[11px] text-slate-500">Đã thanh toán: <strong>{c.paymentProgress}%</strong></div>
+                            </div>
+                            <Link href={`/contracts/${c.id}`}>
+                              <Button size="sm" variant="outline" className="text-xs">
+                                Chi Tiết HĐMB
+                              </Button>
+                            </Link>
                           </div>
                         </div>
                       )
                     })}
                   </div>
                 ) : (
-                  <div className="text-center py-6 text-muted-foreground">
-                    <Home className="h-10 w-10 mx-auto mb-2 text-slate-300" />
-                    <p>Khách hàng đang trong giai đoạn tư vấn, chưa phát sinh hợp đồng.</p>
+                  <div className="text-center py-6 text-slate-400 text-xs">
+                    Khách hàng đang trong giai đoạn tư vấn hoặc booking giữ chỗ, chưa phát sinh hợp đồng mua bán chính thức.
                   </div>
                 )}
               </CardContent>
             </Card>
+
           </div>
         </TabsContent>
 
-        {/* 3. SỞ THÍCH & NHU CẦU */}
+        {/* ========================================================
+            TAB 3: SỞ THÍCH & NHU CẦU ĐẦU TƯ
+        ======================================================== */}
         <TabsContent value="preferences" className="space-y-6 outline-none">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><ListChecks className="h-5 w-5 text-orange-500" /> Bảng Tiêu Chí Nhu Cầu</CardTitle>
-              <CardDescription>Phân tích các yêu cầu của khách hàng đối với bất động sản để Sale tư vấn chính xác nhất.</CardDescription>
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3 border-b">
+              <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                <ListChecks className="h-5 w-5 text-indigo-600" /> Bảng Tiêu Chí Nhu Cầu Được Trích Xuất Tự Động
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-500">
+                Phân tích khẩu vị đầu tư thực tế dựa trên các dự án và loại căn hộ khách hàng đã giao dịch
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                
                 {/* Must-have */}
-                <div className="bg-red-50 dark:bg-red-950/20 p-5 rounded-xl border border-red-100 dark:border-red-900/30">
-                  <h3 className="font-bold text-red-700 dark:text-red-400 flex items-center gap-2 mb-4">
-                    <AlertTriangle className="h-4 w-4" /> Tiêu chí Bắt Buộc (Must-have)
+                <div className="bg-red-50/60 dark:bg-red-950/20 p-5 rounded-2xl border border-red-200/60 space-y-4">
+                  <h3 className="font-bold text-red-800 dark:text-red-300 flex items-center gap-2 text-sm">
+                    <AlertTriangle className="h-4 w-4 text-red-600" /> Tiêu Chí Bắt Buộc (Must-Have Criteria)
                   </h3>
                   <ul className="space-y-3">
-                    <li className="flex gap-2">
-                      <CheckCircle2 className="h-5 w-5 text-red-500 shrink-0" />
+                    <li className="flex gap-2.5">
+                      <CheckCircle2 className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
                       <div>
-                        <p className="font-medium text-sm">Vị trí</p>
-                        <p className="text-xs text-muted-foreground">Khu Đông (Quận 2, Quận 9) hoặc khu compound an ninh 24/7.</p>
+                        <p className="font-bold text-slate-800 dark:text-slate-200">Pháp Lý Dự Án</p>
+                        <p className="text-slate-500">Bắt buộc phải có Quy hoạch 1/500 hoàn thiện, Sổ hồng sở hữu lâu dài hoặc HĐMB chuẩn của Chủ đầu tư uy tín.</p>
                       </div>
                     </li>
-                    <li className="flex gap-2">
-                      <CheckCircle2 className="h-5 w-5 text-red-500 shrink-0" />
+                    <li className="flex gap-2.5">
+                      <CheckCircle2 className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
                       <div>
-                        <p className="font-medium text-sm">Pháp lý</p>
-                        <p className="text-xs text-muted-foreground">Phải có Sổ hồng sở hữu lâu dài hoặc HĐMB rõ ràng, dự án không vướng kiện tụng.</p>
+                        <p className="font-bold text-slate-800 dark:text-slate-200">Vị Trí & Hạ Tầng Kết Nối</p>
+                        <p className="text-slate-500">Đại đô thị sinh thái có sông bao quanh (Aqua City) hoặc tổ hợp mặt tiền biển có cao tốc/sân bay (NovaWorld Phan Thiet).</p>
                       </div>
                     </li>
-                    <li className="flex gap-2">
-                      <CheckCircle2 className="h-5 w-5 text-red-500 shrink-0" />
+                    <li className="flex gap-2.5">
+                      <CheckCircle2 className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
                       <div>
-                        <p className="font-medium text-sm">Hướng cửa/Ban công</p>
-                        <p className="text-xs text-muted-foreground">Hợp Đông Tứ Trạch (Ưu tiên hướng Nam, Đông Nam).</p>
+                        <p className="font-bold text-slate-800 dark:text-slate-200">Hướng Phong Thủy</p>
+                        <p className="text-slate-500">Ưu tiên Đông Tứ Mệnh (Đông Nam, Nam) đón gió sông và view thông thoáng.</p>
                       </div>
                     </li>
                   </ul>
                 </div>
 
                 {/* Nice-to-have */}
-                <div className="bg-blue-50 dark:bg-blue-950/20 p-5 rounded-xl border border-blue-100 dark:border-blue-900/30">
-                  <h3 className="font-bold text-blue-700 dark:text-blue-400 flex items-center gap-2 mb-4">
-                    <Star className="h-4 w-4" /> Tiêu chí Nên Có (Nice-to-have)
+                <div className="bg-blue-50/60 dark:bg-blue-950/20 p-5 rounded-2xl border border-blue-200/60 space-y-4">
+                  <h3 className="font-bold text-blue-800 dark:text-blue-300 flex items-center gap-2 text-sm">
+                    <Star className="h-4 w-4 text-blue-600" /> Tiêu Chí Ưu Tiên Thêm (Nice-To-Have Criteria)
                   </h3>
                   <ul className="space-y-3">
-                    <li className="flex gap-2">
-                      <CheckCircle2 className="h-5 w-5 text-blue-400 shrink-0" />
+                    <li className="flex gap-2.5">
+                      <CheckCircle2 className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
                       <div>
-                        <p className="font-medium text-sm">Tiện ích xung quanh</p>
-                        <p className="text-xs text-muted-foreground">Gần trường học quốc tế cho con (bán kính 3km).</p>
+                        <p className="font-bold text-slate-800 dark:text-slate-200">Đơn Vị Quản Lý & Khai Thác Vận Hành</p>
+                        <p className="text-slate-500">Có đơn vị quốc tế quản lý (Centara Mirage, Accor) để ủy thác cho thuê mang lại dòng tiền ròng đều đặn hàng tháng.</p>
                       </div>
                     </li>
-                    <li className="flex gap-2">
-                      <CheckCircle2 className="h-5 w-5 text-blue-400 shrink-0" />
+                    <li className="flex gap-2.5">
+                      <CheckCircle2 className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
                       <div>
-                        <p className="font-medium text-sm">Cảnh quan</p>
-                        <p className="text-xs text-muted-foreground">View sông hoặc gần công viên lớn.</p>
+                        <p className="font-bold text-slate-800 dark:text-slate-200">Chính Sách Tài Chính Hỗ Trợ</p>
+                        <p className="text-slate-500">Gói ân hạn nợ gốc và hỗ trợ lãi suất 0% từ 18 - 24 tháng qua ngân hàng đối tác MBBank hoặc Vietcombank.</p>
                       </div>
                     </li>
-                    <li className="flex gap-2">
-                      <CheckCircle2 className="h-5 w-5 text-blue-400 shrink-0" />
+                    <li className="flex gap-2.5">
+                      <CheckCircle2 className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
                       <div>
-                        <p className="font-medium text-sm">Chính sách thanh toán</p>
-                        <p className="text-xs text-muted-foreground">Ưu tiên thanh toán giãn tiến độ 2-3 năm không lãi suất.</p>
+                        <p className="font-bold text-slate-800 dark:text-slate-200">Tiện Ích Đặc Quyền VIP</p>
+                        <p className="text-slate-500">Bến du thuyền Aqua Marina, Sân Golf PGA độc quyền, tổ hợp giải trí Bikini Beach.</p>
                       </div>
                     </li>
                   </ul>
                 </div>
+
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* 4. ĐỊNH DANH (Already done in previous step) */}
+        {/* ========================================================
+            TAB 4: ĐỊNH DANH & eKYC PHÁP LÝ
+        ======================================================== */}
         <TabsContent value="identity" className="space-y-6 outline-none">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* eKYC Status Card */}
             <div className="lg:col-span-1 space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <UserCheck className="h-5 w-5 text-green-600" />
-                    Trạng Thái eKYC
+              <Card className="shadow-sm">
+                <CardHeader className="pb-3 border-b">
+                  <CardTitle className="text-base font-bold flex items-center gap-2 text-emerald-700">
+                    <UserCheck className="h-5 w-5 text-emerald-600" />
+                    Trạng Thái Xác Thực eKYC
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between mb-6">
-                    <span className="font-medium">Mức độ hoàn thiện</span>
-                    <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-0">Đã xác minh</Badge>
+                <CardContent className="pt-4 text-xs space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 rounded-xl">
+                    <span className="font-medium text-emerald-900 dark:text-emerald-200">Mức độ hoàn thiện:</span>
+                    <Badge className="bg-emerald-600 text-white font-bold">Đã Xác Minh 100%</Badge>
                   </div>
-                  <div className="relative border-l-2 border-muted ml-3 space-y-6 pb-2">
-                    <div className="relative pl-6">
-                      <span className="absolute -left-[9px] top-1 h-4 w-4 rounded-full bg-green-500 ring-4 ring-background"></span>
-                      <p className="font-medium text-sm">Cập nhật thông tin</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">Hoàn tất lúc 10:30, 10/06/2026</p>
+
+                  <div className="space-y-3 border-l-2 border-slate-200 ml-2 pl-3">
+                    <div>
+                      <p className="font-bold text-slate-800 dark:text-slate-200">Bóc tách OCR CCCD 2 Mặt</p>
+                      <p className="text-[11px] text-slate-500">Độ tin cậy 99.8% qua Document AI</p>
                     </div>
-                    <div className="relative pl-6">
-                      <span className="absolute -left-[9px] top-1 h-4 w-4 rounded-full bg-green-500 ring-4 ring-background"></span>
-                      <p className="font-medium text-sm">Tải lên giấy tờ (CCCD)</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">Hợp lệ (Độ tin cậy 98%)</p>
+                    <div>
+                      <p className="font-bold text-slate-800 dark:text-slate-200">Nhận diện khuôn mặt (Liveness Check)</p>
+                      <p className="text-[11px] text-slate-500">Trùng khớp 96.5% với ảnh CCCD</p>
                     </div>
-                    <div className="relative pl-6">
-                      <span className="absolute -left-[9px] top-1 h-4 w-4 rounded-full bg-green-500 ring-4 ring-background"></span>
-                      <p className="font-medium text-sm">Nhận diện khuôn mặt (Liveness)</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">Trùng khớp 95%</p>
-                    </div>
-                    <div className="relative pl-6">
-                      <span className="absolute -left-[9px] top-1 h-4 w-4 rounded-full bg-green-500 ring-4 ring-background"></span>
-                      <p className="font-medium text-sm text-green-600">Đã phê duyệt</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">Bởi Admin - 11:00, 10/06/2026</p>
+                    <div>
+                      <p className="font-bold text-slate-800 dark:text-slate-200">Đối chiếu dữ liệu công chứng HĐMB</p>
+                      <p className="text-[11px] text-slate-500">Khớp với Hợp đồng HD-921 tại VPCC Sài Gòn</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
 
+            {/* CCCD Details Form */}
             <div className="lg:col-span-2 space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Thông Tin Chi Tiết (Theo CCCD)</CardTitle>
+              <Card className="shadow-sm">
+                <CardHeader className="pb-3 border-b">
+                  <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-200">
+                    Thông Tin Pháp Lý Cá Nhân (Theo Dữ Liệu CCCD Gắn Chip)
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-4">
+                <CardContent className="pt-4 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6">
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Họ và Tên</p>
-                      <p className="font-medium text-base uppercase">{customer?.name}</p>
+                      <p className="text-slate-400 font-semibold mb-1">Họ và Tên</p>
+                      <p className="font-bold text-sm uppercase text-slate-900 dark:text-white">{customer?.name}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Số CCCD / CMND</p>
-                      <p className="font-medium text-base font-mono tracking-wider">079012345678</p>
+                      <p className="text-slate-400 font-semibold mb-1">Số Định Danh CCCD / Hộ Chiếu</p>
+                      <p className="font-mono font-bold text-sm text-indigo-600">079085012345</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Ngày sinh</p>
-                      <p className="font-medium text-base">15/08/1985</p>
+                      <p className="text-slate-400 font-semibold mb-1">Ngày Sinh</p>
+                      <p className="font-semibold text-slate-800 dark:text-slate-200">15/08/1985</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Giới tính</p>
-                      <p className="font-medium text-base">Nam</p>
+                      <p className="text-slate-400 font-semibold mb-1">Giới Tính</p>
+                      <p className="font-semibold text-slate-800 dark:text-slate-200">Nam</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Quê quán</p>
-                      <p className="font-medium text-base">Ba Đình, Hà Nội</p>
+                      <p className="text-slate-400 font-semibold mb-1">Quê Quán</p>
+                      <p className="font-semibold text-slate-800 dark:text-slate-200">Ba Đình, Hà Nội</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Nơi thường trú</p>
-                      <p className="font-medium text-base">Quận 2, TP. Hồ Chí Minh</p>
+                      <p className="text-slate-400 font-semibold mb-1">Nơi Thường Trú</p>
+                      <p className="font-semibold text-slate-800 dark:text-slate-200">Khu Đô Thị Thảo Điền, TP. Thủ Đức, TP.HCM</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Ngày cấp</p>
-                      <p className="font-medium text-base">10/10/2021</p>
+                      <p className="text-slate-400 font-semibold mb-1">Ngày Cấp</p>
+                      <p className="font-semibold text-slate-800 dark:text-slate-200">10/10/2021</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Nơi cấp</p>
-                      <p className="font-medium text-base">Cục Cảnh sát QLHC về TTXH</p>
+                      <p className="text-slate-400 font-semibold mb-1">Nơi Cấp</p>
+                      <p className="font-semibold text-slate-800 dark:text-slate-200">Cục Cảnh sát QLHC về TTXH</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Tài Liệu Đính Kèm</CardTitle>
+              {/* Verified Documents from Contract Attachments */}
+              <Card className="shadow-sm">
+                <CardHeader className="pb-3 border-b">
+                  <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-200">
+                    Tệp Đính Kèm Pháp Lý Đã Lưu Trữ
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="border rounded-lg p-4 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900/50">
-                      <div className="w-full aspect-[1.6/1] bg-slate-200 dark:bg-slate-800 rounded flex items-center justify-center mb-3">
-                        <CreditCard className="h-10 w-10 text-slate-400" />
+                <CardContent className="pt-4 text-xs space-y-3">
+                  {customerContracts[0]?.attachments?.map((att) => (
+                    <div key={att.id} className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <FileText className="h-5 w-5 text-indigo-600 shrink-0" />
+                        <div>
+                          <p className="font-bold text-slate-800 dark:text-slate-200">{att.name}</p>
+                          <p className="text-[11px] text-slate-400">{att.category} • {att.size} • Ngày tải: {att.date}</p>
+                        </div>
                       </div>
-                      <p className="font-medium text-sm">CCCD Mặt Trước</p>
-                      <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                         <UserCheck className="h-3 w-3" /> Hợp lệ
-                      </p>
+                      <Button size="sm" variant="ghost" className="h-8 text-xs text-indigo-600">
+                        <Download className="h-3.5 w-3.5 mr-1" /> Tải về
+                      </Button>
                     </div>
-                    <div className="border rounded-lg p-4 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900/50">
-                      <div className="w-full aspect-[1.6/1] bg-slate-200 dark:bg-slate-800 rounded flex items-center justify-center mb-3">
-                        <CreditCard className="h-10 w-10 text-slate-400" />
-                      </div>
-                      <p className="font-medium text-sm">CCCD Mặt Sau</p>
-                      <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                         <UserCheck className="h-3 w-3" /> Hợp lệ
-                      </p>
+                  )) || (
+                    <div className="text-center py-4 text-slate-400">
+                      Chưa có tài liệu đính kèm.
                     </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
+
           </div>
         </TabsContent>
 
-        {/* 5. HÀNH TRÌNH */}
+        {/* ========================================================
+            TAB 5: HÀNH TRÌNH BÁN HÀNG (SALES FUNNEL)
+        ======================================================== */}
         <TabsContent value="journey" className="space-y-6 outline-none">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><TrendingUp className="h-5 w-5 text-indigo-500" /> Phễu Bán Hàng (Sales Funnel)</CardTitle>
-              <CardDescription>Tiến trình chinh phục khách hàng theo từng giai đoạn chuẩn hóa.</CardDescription>
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3 border-b">
+              <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-indigo-600" /> Tiến Trình Khách Hàng Trong Phễu Bán Hàng (Sales Funnel)
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-500">
+                Trạng thái hiện tại của khách hàng được tự động kích hoạt dựa trên hợp đồng và phiếu giữ chỗ thực tế
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex flex-col gap-2">
-                {/* Funnel Steps */}
-                <div className="bg-indigo-100 text-indigo-800 p-4 rounded-xl shadow-sm text-center font-bold text-lg border border-indigo-200">
-                  <span className="block text-xs uppercase tracking-widest mb-1 opacity-70">Giai đoạn 1</span>
-                  Nhận Thức & Tiếp Cận
-                  <div className="text-sm font-normal mt-2 flex justify-center gap-4">
-                    <span className="flex items-center gap-1"><CheckCircle2 className="h-4 w-4"/> Quảng cáo FB</span>
-                    <span className="flex items-center gap-1"><CheckCircle2 className="h-4 w-4"/> Để lại số ĐT</span>
-                  </div>
-                </div>
+            <CardContent className="pt-6">
+              <div className="flex flex-col gap-2 max-w-2xl mx-auto">
                 
-                <div className="flex justify-center"><div className="w-1 h-6 bg-border"></div></div>
-
-                <div className="bg-blue-100 text-blue-800 p-4 rounded-xl shadow-sm text-center font-bold text-lg border border-blue-200 mx-4">
-                  <span className="block text-xs uppercase tracking-widest mb-1 opacity-70">Giai đoạn 2</span>
-                  Cân Nhắc & Đánh Giá
-                  <div className="text-sm font-normal mt-2 flex justify-center gap-4">
-                    <span className="flex items-center gap-1"><CheckCircle2 className="h-4 w-4"/> Telesale</span>
-                    <span className="flex items-center gap-1"><CheckCircle2 className="h-4 w-4"/> Gặp mặt trực tiếp</span>
-                    <span className="flex items-center gap-1"><CheckCircle2 className="h-4 w-4"/> Tham quan nhà mẫu</span>
+                {/* Stage 1 */}
+                <div className={`p-4 rounded-2xl shadow-sm text-center font-bold text-sm border transition-all ${
+                  customer?.status === 'Mới' ? 'bg-indigo-100 border-indigo-400 text-indigo-900 ring-2 ring-indigo-400' : 'bg-slate-100 text-slate-700 border-slate-200'
+                }`}>
+                  <span className="block text-[10px] uppercase tracking-widest mb-1 text-slate-500">Giai đoạn 1</span>
+                  Tiếp Cận & Khởi Tạo Lead
+                  <div className="text-xs font-normal mt-2 flex justify-center gap-4 text-slate-600">
+                    <span>✓ Kênh Marketing Ads / Giới thiệu</span>
+                    <span>✓ Xác nhận số điện thoại</span>
                   </div>
                 </div>
 
-                <div className="flex justify-center"><div className="w-1 h-6 bg-border"></div></div>
+                <div className="flex justify-center"><div className="w-1 h-5 bg-slate-300"></div></div>
 
-                <div className="bg-orange-100 text-orange-800 p-4 rounded-xl shadow-sm text-center font-bold text-lg border border-orange-200 mx-8 relative border-2 border-orange-400">
-                  <Badge className="absolute -top-3 -right-3 bg-red-500 animate-pulse">Hiện tại</Badge>
-                  <span className="block text-xs uppercase tracking-widest mb-1 opacity-70">Giai đoạn 3</span>
-                  Quyết Định & Giao Dịch
-                  <div className="text-sm font-normal mt-2 flex justify-center gap-4">
-                    <span className="flex items-center gap-1 text-orange-700 font-bold"><Clock className="h-4 w-4"/> Đang Booking (50Tr)</span>
+                {/* Stage 2 */}
+                <div className={`p-4 rounded-2xl shadow-sm text-center font-bold text-sm border mx-4 transition-all ${
+                  customer?.status === 'Đang tư vấn' && customerBookings.length === 0 ? 'bg-blue-100 border-blue-400 text-blue-900 ring-2 ring-blue-400' : 'bg-slate-100 text-slate-700 border-slate-200'
+                }`}>
+                  <span className="block text-[10px] uppercase tracking-widest mb-1 text-slate-500">Giai đoạn 2</span>
+                  Tư Vấn Chuyên Sâu & Tham Quan Sa Bàn
+                  <div className="text-xs font-normal mt-2 flex justify-center gap-4 text-slate-600">
+                    <span>✓ Cuộc gọi VoIP tư vấn</span>
+                    <span>✓ Trải nghiệm Sa bàn VR 360</span>
+                    <span>✓ Nhận bảng tính vay ngân hàng</span>
                   </div>
                 </div>
 
-                <div className="flex justify-center"><div className="w-1 h-6 bg-border"></div></div>
+                <div className="flex justify-center"><div className="w-1 h-5 bg-slate-300"></div></div>
 
-                <div className="bg-slate-100 text-slate-400 p-4 rounded-xl shadow-sm text-center font-bold text-lg border border-slate-200 mx-12 border-dashed">
-                  <span className="block text-xs uppercase tracking-widest mb-1 opacity-70">Giai đoạn 4</span>
-                  Chăm Sóc Hậu Mãi
-                  <div className="text-sm font-normal mt-2 flex justify-center gap-4">
-                    Ký HĐMB ➔ Bàn Giao ➔ Giới Thiệu
+                {/* Stage 3 */}
+                <div className={`p-4 rounded-2xl shadow-sm text-center font-bold text-sm border mx-8 relative transition-all ${
+                  hasActiveBooking && !isDealClosed ? 'bg-amber-100 border-amber-400 text-amber-900 ring-2 ring-amber-400' : 'bg-slate-100 text-slate-700 border-slate-200'
+                }`}>
+                  {hasActiveBooking && !isDealClosed && (
+                    <Badge className="absolute -top-3 -right-3 bg-amber-600 text-white animate-pulse">
+                      Giai đoạn hiện tại
+                    </Badge>
+                  )}
+                  <span className="block text-[10px] uppercase tracking-widest mb-1 text-slate-500">Giai đoạn 3</span>
+                  Quyết Định Đặt Cọc & Giữ Chỗ (Booking)
+                  <div className="text-xs font-normal mt-2 flex justify-center gap-4 text-slate-600">
+                    <span>
+                      {customerBookings.length > 0 
+                        ? `✓ Đã cọc ${(customerBookings[0].depositAmount / 1e6).toFixed(0)}Tr giữ chỗ căn ${customerBookings[0].unitCode}`
+                        : 'Khóa căn tạm thời & Chờ nạp tiền cọc'}
+                    </span>
                   </div>
                 </div>
+
+                <div className="flex justify-center"><div className="w-1 h-5 bg-slate-300"></div></div>
+
+                {/* Stage 4 */}
+                <div className={`p-4 rounded-2xl shadow-sm text-center font-bold text-sm border mx-12 relative transition-all ${
+                  isDealClosed ? 'bg-emerald-100 border-emerald-400 text-emerald-900 ring-2 ring-emerald-500' : 'bg-slate-100 text-slate-500 border-slate-200 border-dashed'
+                }`}>
+                  {isDealClosed && (
+                    <Badge className="absolute -top-3 -right-3 bg-emerald-600 text-white">
+                      Khách Hàng Thành Công
+                    </Badge>
+                  )}
+                  <span className="block text-[10px] uppercase tracking-widest mb-1 text-slate-500">Giai đoạn 4</span>
+                  Ký HĐMB Chính Thức & Chăm Sóc Hậu Mãi
+                  <div className="text-xs font-normal mt-2 flex justify-center gap-4 text-slate-600">
+                    <span>✓ Ký HĐMB công chứng</span>
+                    <span>✓ Thanh toán theo tiến độ</span>
+                    <span>✓ Tích điểm NovaLoyalty & Bàn giao</span>
+                  </div>
+                </div>
+
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* 6. LỊCH SỬ TƯƠNG TÁC */}
+        {/* ========================================================
+            TAB 6: NHẬT KÝ TƯƠNG TÁC (TIMELINE ĐỘNG)
+        ======================================================== */}
         <TabsContent value="timeline" className="space-y-6 outline-none">
-          <Card>
-            <CardHeader>
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3 border-b">
               <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                 <div>
-                  <CardTitle className="flex items-center gap-2"><Calendar className="h-5 w-5 text-teal-600" /> Nhật Ký Tương Tác</CardTitle>
-                  <CardDescription className="mt-1">Chi tiết mọi điểm chạm với khách hàng.</CardDescription>
+                  <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-teal-600" /> Nhật Ký Tương Tác & Điểm Chạm Thực Tế
+                  </CardTitle>
+                  <CardDescription className="text-xs text-slate-500">
+                    Tự động đồng bộ từ các hợp đồng đã ký, phiếu booking, giao dịch loyalty và cuộc gọi VoIP
+                  </CardDescription>
                 </div>
-                {/* Mock Filter UI */}
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80 px-3 py-1 text-xs flex items-center gap-1"><Filter className="h-3 w-3"/> Tất cả</Badge>
-                  <Badge variant="outline" className="cursor-pointer hover:bg-secondary/20 px-3 py-1 text-xs">Cuộc gọi</Badge>
-                  <Badge variant="outline" className="cursor-pointer hover:bg-secondary/20 px-3 py-1 text-xs">Gặp mặt</Badge>
-                  <Badge variant="outline" className="cursor-pointer hover:bg-secondary/20 px-3 py-1 text-xs">Giao dịch</Badge>
-                </div>
+                <Badge variant="outline" className="text-xs font-semibold px-3 py-1 bg-slate-50 self-start sm:self-auto">
+                  Tổng số: {dynamicTimeline.length} sự kiện
+                </Badge>
               </div>
             </CardHeader>
-            <CardContent className="pt-2 pb-8 overflow-hidden pr-2 sm:pr-6">
-              <Timeline 
-                items={[
-                  { title: "Giữ chỗ (Booking)", description: "Khách hàng đã chuyển khoản 50 triệu giữ chỗ căn góc Aqua City. Mã giao dịch: VN283991", status: "completed", time: "Hôm nay 15:00", icon: <Bookmark className="text-orange-500" /> },
-                  { title: "Gửi VR", description: "Gửi link thực tế ảo 3D nhà mẫu căn góc qua Zalo.", status: "completed", time: "Hôm qua 16:30", icon: <Glasses /> },
-                  { title: "Gửi Panorama", description: "Gửi ảnh Panorama 360 độ view nhìn từ tầng 20.", status: "completed", time: "Hôm qua 16:25", icon: <Camera /> },
-                  { title: "Gửi bảng giá", description: "Gửi file PDF báo giá chi tiết 3 căn biệt thự ưu tiên.", status: "completed", time: "18/07/2026 14:00", icon: <FileText /> },
-                  { title: "Gặp mặt (Meeting)", description: "Gặp mặt tại văn phòng công ty. Khách hàng đi cùng vợ, rất ưng ý thiết kế nội thất gỗ.", status: "completed", time: "15/07/2026 09:30", icon: <Users className="text-blue-500" /> },
-                  { title: "Zalo", description: "Chat Zalo: Tư vấn thêm về phương thức thanh toán chuẩn và chiết khấu.", status: "completed", time: "12/07/2026 11:20", icon: <MessageCircle /> },
-                  { title: "Cuộc gọi (Call)", description: "Cuộc gọi telesale (4 phút 20s). Khách quan tâm đầu tư trung hạn, tài chính khoảng 7 tỷ.", status: "completed", time: "11/07/2026 09:15", icon: <PhoneCall className="text-green-500" /> },
-                  { title: "Facebook", description: "Khách hàng để lại comment số điện thoại trên bài đăng Fanpage sự kiện mở bán.", status: "completed", time: "10/07/2026 20:00", icon: <ThumbsUp /> },
-                ]}
-              />
+            <CardContent className="pt-6 pb-8 overflow-hidden pr-2 sm:pr-6">
+              <Timeline items={dynamicTimeline} />
             </CardContent>
           </Card>
         </TabsContent>
+
       </Tabs>
 
       <AIAssistantDialog />
-      {/* Toast Feedback */}
-      {toastMsg && (
-        <div className="fixed top-20 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 border border-slate-700 animate-in fade-in slide-in-from-top-4">
-          <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
-          <span className="text-sm font-medium">{toastMsg}</span>
-        </div>
-      )}
 
-      {/* Edit Profile Dialog */}
+      {/* ========================================================
+          MODAL: CHỈNH SỬA HỒ SƠ KHÁCH HÀNG (Z-[1000])
+      ======================================================== */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="sm:max-w-[480px]">
+        <DialogContent className="sm:max-w-[500px] z-[1000]">
           <form onSubmit={handleSaveProfile}>
             <DialogHeader>
-              <DialogTitle className="font-bold text-slate-900">Chỉnh Sửa Hồ Sơ Khách Hàng</DialogTitle>
-              <DialogDescription>Cập nhật thông tin liên hệ, phân loại và trạng thái chăm sóc.</DialogDescription>
+              <DialogTitle className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Edit className="h-5 w-5 text-indigo-600" /> Chỉnh Sửa Hồ Sơ Khách Hàng
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                Cập nhật thông tin phân loại, phân công chuyên viên và trạng thái chăm sóc
+              </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-3 py-3 text-sm">
+            <div className="space-y-3.5 py-4 text-xs">
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Số điện thoại</label>
+                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">Họ và tên khách hàng</label>
                 <Input 
-                  value={editForm.phone} 
-                  onChange={e => setEditForm({ ...editForm, phone: e.target.value })} 
+                  value={editForm.name} 
+                  onChange={e => setEditForm({ ...editForm, name: e.target.value })} 
                   required 
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Email</label>
-                <Input 
-                  type="email" 
-                  value={editForm.email} 
-                  onChange={e => setEditForm({ ...editForm, email: e.target.value })} 
+                  className="h-9 text-xs font-bold"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Phân hạng VIP</label>
+                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">Số điện thoại</label>
+                  <Input 
+                    value={editForm.phone} 
+                    onChange={e => setEditForm({ ...editForm, phone: e.target.value })} 
+                    required 
+                    className="h-9 text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">Email giao dịch</label>
+                  <Input 
+                    type="email" 
+                    value={editForm.email} 
+                    onChange={e => setEditForm({ ...editForm, email: e.target.value })} 
+                    className="h-9 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">Phân hạng khách hàng</label>
                   <Select value={editForm.rank} onValueChange={(val) => setEditForm({ ...editForm, rank: (val as any) || 'VIP' })}>
-                    <SelectTrigger><SelectValue placeholder="Phân hạng" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="VVIP">VVIP Kim Cương</SelectItem>
-                      <SelectItem value="VIP">VIP Bạch Kim</SelectItem>
-                      <SelectItem value="Tiềm Năng">Tiềm Năng</SelectItem>
-                      <SelectItem value="Mới">Khách Mới</SelectItem>
+                    <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Phân hạng" /></SelectTrigger>
+                    <SelectContent className="z-[1050]">
+                      <SelectItem value="VVIP">👑 VVIP Kim Cương (&gt; 20 Tỷ)</SelectItem>
+                      <SelectItem value="VIP">💎 VIP Bạch Kim (&gt; 8 Tỷ)</SelectItem>
+                      <SelectItem value="Tiềm Năng">⚡ Khách Tiềm Năng</SelectItem>
+                      <SelectItem value="Mới">🌱 Khách Mới</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Trạng thái chăm sóc</label>
+                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">Trạng thái chăm sóc</label>
                   <Select value={editForm.status} onValueChange={(val) => setEditForm({ ...editForm, status: (val as any) || 'Đang tư vấn' })}>
-                    <SelectTrigger><SelectValue placeholder="Trạng thái" /></SelectTrigger>
-                    <SelectContent>
+                    <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Trạng thái" /></SelectTrigger>
+                    <SelectContent className="z-[1050]">
                       <SelectItem value="Đang tư vấn">Đang tư vấn</SelectItem>
                       <SelectItem value="Đang chăm sóc">Đang chăm sóc</SelectItem>
                       <SelectItem value="Đã giao dịch">Đã giao dịch</SelectItem>
@@ -699,23 +1196,25 @@ export default function Customer360Page({ params }: { params: Promise<{ id: stri
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Chuyên viên phụ trách</label>
+                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">Chuyên viên tư vấn phụ trách</label>
                 <Select value={editForm.assignedTo} onValueChange={(val) => setEditForm({ ...editForm, assignedTo: val || 'Lê Hoàng Anh' })}>
-                  <SelectTrigger><SelectValue placeholder="Chuyên viên" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Lê Hoàng Anh">Lê Hoàng Anh</SelectItem>
-                    <SelectItem value="Thanh Hà">Thanh Hà</SelectItem>
-                    <SelectItem value="Tuấn Tú">Tuấn Tú</SelectItem>
-                    <SelectItem value="Minh Anh">Minh Anh</SelectItem>
-                    <SelectItem value="Nguyễn Mai">Nguyễn Mai</SelectItem>
+                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Chuyên viên" /></SelectTrigger>
+                  <SelectContent className="z-[1050]">
+                    <SelectItem value="Lê Hoàng Anh">Lê Hoàng Anh (Senior Sales)</SelectItem>
+                    <SelectItem value="Thanh Hà">Thanh Hà (VVIP Sales)</SelectItem>
+                    <SelectItem value="Tuấn Tú">Tuấn Tú (Sales Rep)</SelectItem>
+                    <SelectItem value="Minh Anh">Minh Anh (Sales Rep)</SelectItem>
+                    <SelectItem value="Nguyễn Mai">Nguyễn Mai (Sales Rep)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            <DialogFooter className="gap-2 sm:gap-0">
-              <Button type="button" variant="ghost" onClick={() => setIsEditOpen(false)}>Hủy</Button>
-              <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold">
+            <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t">
+              <Button type="button" variant="outline" size="sm" onClick={() => setIsEditOpen(false)}>
+                Hủy
+              </Button>
+              <Button type="submit" size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold">
                 Lưu Thay Đổi
               </Button>
             </DialogFooter>
