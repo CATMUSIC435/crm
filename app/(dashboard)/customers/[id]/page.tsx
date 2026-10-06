@@ -23,6 +23,7 @@ import {
 import { Timeline } from "@/components/ui/timeline"
 import { AIAssistantDialog } from "@/components/ui/ai-assistant-dialog"
 import { useStore } from "@/store/useStore"
+import { apiClient } from "@/lib/api-client"
 
 export default function Customer360Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -32,8 +33,35 @@ export default function Customer360Page({ params }: { params: Promise<{ id: stri
     updateCustomer, makeCall 
   } = useStore()
   
-  // 1. Resolve Customer by ID or Code
-  const customer = customers.find(c => c.id === id || c.code === id) || customers[0]
+  // 1. Resolve Customer by ID or Code with Database Hydration
+  const storeCustomer = customers.find(c => c.id === id || c.code === id)
+  const [dbCustomer, setDbCustomer] = useState<any>(null)
+
+  React.useEffect(() => {
+    let active = true
+    apiClient.customers.getById(id)
+      .then(res => {
+        if (!active || !res) return
+        const d = res.data || res
+        if (d && (d.fullName || d.name)) {
+          setDbCustomer({
+            id: d.id || id,
+            code: d.code,
+            name: d.fullName || d.name,
+            phone: d.phone,
+            email: d.email,
+            rank: d.rank === 'DIAMOND_VVIP' ? 'VVIP' : d.rank === 'PLATINUM_VIP' ? 'VIP' : d.rank,
+            revenue: Number(d.totalRevenue) || 0,
+            assignedTo: d.assignedTo?.fullName || 'Lê Hoàng Anh',
+            status: d.status === 'ACTIVE' ? 'Đã giao dịch' : (d.status || 'Đang tư vấn'),
+          })
+        }
+      })
+      .catch(() => {})
+    return () => { active = false }
+  }, [id])
+
+  const customer = dbCustomer || storeCustomer
 
   // 2. Resolve Related Real Entities from Store / Database
   const customerContracts = useMemo(() => {
@@ -112,7 +140,17 @@ export default function Customer360Page({ params }: { params: Promise<{ id: stri
     return inventory.slice(0, 2)
   }, [inventory])
 
-  // 5. Interactive Modal & UI State
+  // 5. Current Session User & RBAC Permissions
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  React.useEffect(() => {
+    const u = apiClient.getUser()
+    if (u) setCurrentUser(u)
+    else setCurrentUser({ role: 'SUPER_ADMIN', fullName: 'Lê Hoàng Anh' })
+  }, [])
+  const isManagerOrAdmin = ['TEAM_LEADER', 'DIRECTOR', 'ADMIN', 'SUPER_ADMIN'].includes(currentUser?.role || 'SUPER_ADMIN')
+  const isAgent = currentUser?.role === 'AGENT'
+
+  // 6. Interactive Modal & UI State
   const [toastMsg, setToastMsg] = useState<string | null>(null)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [editForm, setEditForm] = useState({
@@ -138,6 +176,68 @@ export default function Customer360Page({ params }: { params: Promise<{ id: stri
     }
   }, [customer])
 
+  // Custom User-Input Timeline Notes
+  const [customNotes, setCustomNotes] = useState<any[]>([])
+  const [newNote, setNewNote] = useState({
+    type: 'call',
+    title: '',
+    description: '',
+  })
+
+  const handleAddTimelineNote = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newNote.title.trim()) return
+    const typeLabel = 
+      newNote.type === 'call' ? 'Cuộc Gọi Tư Vấn VoIP' :
+      newNote.type === 'meeting' ? 'Gặp Mặt / Xem Nhà Mẫu' :
+      newNote.type === 'zalo' ? 'Tin Nhắn Zalo / SMS' :
+      newNote.type === 'tour' ? 'Trải Nghiệm Sa Bàn VR 360' : 'Email CSBH & Bảng Tính'
+    
+    const noteIcon = 
+      newNote.type === 'call' ? <PhoneCall className="text-emerald-500" /> :
+      newNote.type === 'meeting' ? <Users className="text-blue-500" /> :
+      newNote.type === 'zalo' ? <MessageCircle className="text-teal-500" /> :
+      newNote.type === 'tour' ? <Eye className="text-purple-500" /> : <Mail className="text-indigo-500" />
+
+    const noteEvent = {
+      title: `${typeLabel}: ${newNote.title}`,
+      description: newNote.description || 'Chuyên viên ghi nhận tương tác chăm sóc khách hàng mới.',
+      time: 'Vừa xong (Hôm nay)',
+      status: 'completed',
+      icon: noteIcon
+    }
+    setCustomNotes([noteEvent, ...customNotes])
+    setNewNote({ type: 'call', title: '', description: '' })
+    setToastMsg('📝 Đã lưu ghi chú tương tác mới vào dòng thời gian khách hàng!')
+    setTimeout(() => setToastMsg(null), 3000)
+  }
+
+  // Custom User-Input Preferences Criteria
+  const [customMustHaves, setCustomMustHaves] = useState<any[]>([])
+  const [customNiceToHaves, setCustomNiceToHaves] = useState<any[]>([])
+  const [newCriteria, setNewCriteria] = useState({
+    type: 'must',
+    title: '',
+    description: '',
+  })
+
+  const handleAddCriteria = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newCriteria.title.trim()) return
+    const item = {
+      title: newCriteria.title,
+      desc: newCriteria.description || 'Tiêu chí được chuyên viên bổ sung theo nhu cầu khách hàng.'
+    }
+    if (newCriteria.type === 'must') {
+      setCustomMustHaves([...customMustHaves, item])
+    } else {
+      setCustomNiceToHaves([...customNiceToHaves, item])
+    }
+    setNewCriteria({ type: 'must', title: '', description: '' })
+    setToastMsg('🎯 Đã lưu tiêu chí nhu cầu đầu tư mới cho khách hàng!')
+    setTimeout(() => setToastMsg(null), 3000)
+  }
+
   const handleQuickCall = () => {
     if (!customer) return
     makeCall(customer.phone)
@@ -155,10 +255,19 @@ export default function Customer360Page({ params }: { params: Promise<{ id: stri
     setTimeout(() => setToastMsg(null), 2500)
   }
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!customer) return
     updateCustomer(customer.id, editForm)
+    try {
+      await apiClient.customers.update(customer.id, {
+        fullName: editForm.name,
+        phone: editForm.phone,
+        email: editForm.email,
+        rank: editForm.rank === 'VVIP' ? 'DIAMOND_VVIP' : editForm.rank === 'VIP' ? 'PLATINUM_VIP' : editForm.rank,
+        status: editForm.status,
+      })
+    } catch {}
     setIsEditOpen(false)
     setToastMsg('🎉 Đã cập nhật thành công hồ sơ khách hàng vào Cơ sở dữ liệu!')
     setTimeout(() => setToastMsg(null), 3500)
@@ -236,14 +345,29 @@ export default function Customer360Page({ params }: { params: Promise<{ id: stri
       )
     }
 
-    return list
-  }, [customerContracts, customerBookings, customerLoyalty, callLogs, projects, customer])
+    return [...customNotes, ...list]
+  }, [customNotes, customerContracts, customerBookings, customerLoyalty, callLogs, projects, customer])
 
   // Formatting utility
   const formatCurrency = (val: number) => {
     if (val >= 1e9) return `${(val / 1e9).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} Tỷ VNĐ`
     if (val >= 1e6) return `${(val / 1e6).toLocaleString('vi-VN', { maximumFractionDigits: 0 })} Triệu VNĐ`
     return `${val.toLocaleString('vi-VN')} VNĐ`
+  }
+
+  if (!customer) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[500px] text-center p-8 bg-white dark:bg-slate-900 rounded-2xl border shadow-sm">
+        <Users className="h-16 w-16 text-slate-300 dark:text-slate-700 mb-4" />
+        <h2 className="text-xl font-bold text-slate-800 dark:text-white">Không Tìm Thấy Hồ Sơ Khách Hàng</h2>
+        <p className="text-sm text-slate-500 mt-2 max-w-md">Mã khách hàng &quot;{id}&quot; không tồn tại hoặc đã bị xóa khỏi hệ thống CRM.</p>
+        <Link href="/customers" className="mt-6">
+          <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium">
+            Quay lại Danh Bạ Khách Hàng
+          </Button>
+        </Link>
+      </div>
+    )
   }
 
   return (
@@ -287,6 +411,9 @@ export default function Customer360Page({ params }: { params: Promise<{ id: stri
                 'bg-slate-100 text-slate-700'
               }>
                 {customer?.status}
+              </Badge>
+              <Badge variant="outline" className="text-xs font-semibold bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300">
+                Vai trò: {currentUser?.role || 'SUPER_ADMIN'}
               </Badge>
             </div>
 
@@ -845,6 +972,15 @@ export default function Customer360Page({ params }: { params: Promise<{ id: stri
                         <p className="text-slate-500">Ưu tiên Đông Tứ Mệnh (Đông Nam, Nam) đón gió sông và view thông thoáng.</p>
                       </div>
                     </li>
+                    {customMustHaves.map((m, idx) => (
+                      <li key={`custom-must-${idx}`} className="flex gap-2.5 animate-in fade-in">
+                        <CheckCircle2 className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-bold text-slate-800 dark:text-slate-200">{m.title}</p>
+                          <p className="text-slate-500">{m.desc}</p>
+                        </div>
+                      </li>
+                    ))}
                   </ul>
                 </div>
 
@@ -875,9 +1011,58 @@ export default function Customer360Page({ params }: { params: Promise<{ id: stri
                         <p className="text-slate-500">Bến du thuyền Aqua Marina, Sân Golf PGA độc quyền, tổ hợp giải trí Bikini Beach.</p>
                       </div>
                     </li>
+                    {customNiceToHaves.map((n, idx) => (
+                      <li key={`custom-nice-${idx}`} className="flex gap-2.5 animate-in fade-in">
+                        <CheckCircle2 className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-bold text-slate-800 dark:text-slate-200">{n.title}</p>
+                          <p className="text-slate-500">{n.desc}</p>
+                        </div>
+                      </li>
+                    ))}
                   </ul>
                 </div>
 
+              </div>
+
+              {/* Form Nhập Tiêu Chí Mới */}
+              <div className="mt-6 p-4 rounded-xl border border-indigo-100 dark:border-slate-800 bg-indigo-50/40 dark:bg-slate-900/40">
+                <h4 className="font-bold text-xs text-indigo-900 dark:text-indigo-300 mb-3 flex items-center gap-2">
+                  <UserPlus className="h-4 w-4 text-indigo-600" /> Bổ Sung Tiêu Chí Nhu Cầu Đầu Tư Mới (Form Nhập Dữ Liệu)
+                </h4>
+                <form onSubmit={handleAddCriteria} className="grid grid-cols-1 sm:grid-cols-12 gap-3 text-xs">
+                  <div className="sm:col-span-3">
+                    <Select value={newCriteria.type} onValueChange={(val) => setNewCriteria({ ...newCriteria, type: val })}>
+                      <SelectTrigger className="h-8 text-xs bg-white dark:bg-slate-800"><SelectValue /></SelectTrigger>
+                      <SelectContent className="z-[1050]">
+                        <SelectItem value="must">🔴 Bắt buộc (Must-Have)</SelectItem>
+                        <SelectItem value="nice">🔵 Ưu tiên (Nice-To-Have)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="sm:col-span-3">
+                    <Input 
+                      placeholder="Tiêu đề (VD: Ngân sách tối đa, Hướng...)" 
+                      value={newCriteria.title}
+                      onChange={e => setNewCriteria({ ...newCriteria, title: e.target.value })}
+                      required
+                      className="h-8 text-xs bg-white dark:bg-slate-800"
+                    />
+                  </div>
+                  <div className="sm:col-span-4">
+                    <Input 
+                      placeholder="Mô tả chi tiết nhu cầu đầu tư..." 
+                      value={newCriteria.description}
+                      onChange={e => setNewCriteria({ ...newCriteria, description: e.target.value })}
+                      className="h-8 text-xs bg-white dark:bg-slate-800"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Button type="submit" size="sm" className="w-full h-8 text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold">
+                      Lưu Tiêu Chí
+                    </Button>
+                  </div>
+                </form>
               </div>
             </CardContent>
           </Card>
@@ -1112,6 +1297,54 @@ export default function Customer360Page({ params }: { params: Promise<{ id: stri
               </div>
             </CardHeader>
             <CardContent className="pt-6 pb-8 overflow-hidden pr-2 sm:pr-6">
+              {/* Form Ghi Nhận Điểm Chạm / Tương Tác Mới */}
+              <div className="mb-6 p-4 rounded-xl border border-teal-100 dark:border-slate-800 bg-teal-50/40 dark:bg-slate-900/40">
+                <h4 className="font-bold text-xs text-teal-900 dark:text-teal-300 mb-3 flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-teal-600" /> Thêm Ghi Chú Tương Tác & Điểm Chạm Chăm Sóc Mới (Form Nhập Dữ Liệu)
+                </h4>
+                <form onSubmit={handleAddTimelineNote} className="space-y-3 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">Kênh tương tác</label>
+                      <Select value={newNote.type} onValueChange={(val) => setNewNote({ ...newNote, type: val })}>
+                        <SelectTrigger className="h-8 text-xs bg-white dark:bg-slate-800"><SelectValue /></SelectTrigger>
+                        <SelectContent className="z-[1050]">
+                          <SelectItem value="call">📞 Cuộc gọi tư vấn VoIP</SelectItem>
+                          <SelectItem value="meeting">🤝 Gặp mặt / Xem nhà mẫu</SelectItem>
+                          <SelectItem value="zalo">💬 Tin nhắn Zalo / SMS</SelectItem>
+                          <SelectItem value="tour">👓 Trải nghiệm Sa bàn VR 360</SelectItem>
+                          <SelectItem value="email">✉️ Gửi Email CSBH & Bảng Tính</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">Tiêu đề tương tác</label>
+                      <Input 
+                        placeholder="VD: Hẹn khách tham quan dự án Aqua City vào thứ Bảy..." 
+                        value={newNote.title}
+                        onChange={e => setNewNote({ ...newNote, title: e.target.value })}
+                        required
+                        className="h-8 text-xs bg-white dark:bg-slate-800"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">Nội dung chi tiết cuộc trao đổi</label>
+                    <Input 
+                      placeholder="Ghi nhận phản hồi của khách, các điều khoản thương lượng, yêu cầu chuẩn bị..." 
+                      value={newNote.description}
+                      onChange={e => setNewNote({ ...newNote, description: e.target.value })}
+                      className="h-8 text-xs bg-white dark:bg-slate-800"
+                    />
+                  </div>
+                  <div className="flex justify-end">
+                    <Button type="submit" size="sm" className="h-8 text-xs bg-teal-600 hover:bg-teal-700 text-white font-bold">
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Lưu Ghi Chú Tương Tác
+                    </Button>
+                  </div>
+                </form>
+              </div>
+
               <Timeline items={dynamicTimeline} />
             </CardContent>
           </Card>
@@ -1196,9 +1429,22 @@ export default function Customer360Page({ params }: { params: Promise<{ id: stri
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">Chuyên viên tư vấn phụ trách</label>
-                <Select value={editForm.assignedTo} onValueChange={(val) => setEditForm({ ...editForm, assignedTo: val || 'Lê Hoàng Anh' })}>
-                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Chuyên viên" /></SelectTrigger>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-semibold text-slate-700 dark:text-slate-300 block">Chuyên viên tư vấn phụ trách</label>
+                  {!isManagerOrAdmin && (
+                    <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1">
+                      🔒 Khóa phân quyền (Chỉ Leader/Admin)
+                    </span>
+                  )}
+                </div>
+                <Select 
+                  disabled={!isManagerOrAdmin}
+                  value={editForm.assignedTo} 
+                  onValueChange={(val) => setEditForm({ ...editForm, assignedTo: val || 'Lê Hoàng Anh' })}
+                >
+                  <SelectTrigger className={`h-9 text-xs ${!isManagerOrAdmin ? 'bg-slate-100 dark:bg-slate-800 opacity-80 cursor-not-allowed' : ''}`}>
+                    <SelectValue placeholder="Chuyên viên" />
+                  </SelectTrigger>
                   <SelectContent className="z-[1050]">
                     <SelectItem value="Lê Hoàng Anh">Lê Hoàng Anh (Senior Sales)</SelectItem>
                     <SelectItem value="Thanh Hà">Thanh Hà (VVIP Sales)</SelectItem>
@@ -1207,6 +1453,11 @@ export default function Customer360Page({ params }: { params: Promise<{ id: stri
                     <SelectItem value="Nguyễn Mai">Nguyễn Mai (Sales Rep)</SelectItem>
                   </SelectContent>
                 </Select>
+                {!isManagerOrAdmin && (
+                  <p className="text-[10px] text-slate-400 mt-1 italic">
+                    Chuyên viên môi giới không được phép tự ý chuyển giao khách hàng. Vui lòng liên hệ Quản lý để điều phối.
+                  </p>
+                )}
               </div>
             </div>
 

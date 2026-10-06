@@ -241,6 +241,16 @@ class ApiClient {
       return this.request<any[]>(`/customers?${searchParams.toString()}`);
     },
     getById: (id: string) => this.request<any>(`/customers/${id}`),
+    create: (data: any) =>
+      this.request('/customers', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    update: (id: string, data: Partial<any>) =>
+      this.request(`/customers/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
   };
 
   // 6. Hợp Đồng & Ký Số e-Sign (Contracts)

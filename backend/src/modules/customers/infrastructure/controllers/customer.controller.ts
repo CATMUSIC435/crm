@@ -1,7 +1,7 @@
-import { Controller, Get, Post, Body, Query, Param, UseGuards, Inject } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Query, Param, UseGuards, Inject, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CUSTOMER_USE_CASE, CustomerUseCase } from '../../application/ports/in/customer.use-case';
-import { CreateCustomerDto, FilterCustomerDto } from '../../application/dtos/customer.dto';
+import { CreateCustomerDto, FilterCustomerDto, UpdateCustomerDto } from '../../application/dtos/customer.dto';
 import { JwtAuthGuard } from '../../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../../common/guards/roles.guard';
 import { Roles } from '../../../../common/decorators/roles.decorator';
@@ -44,4 +44,21 @@ export class CustomerController {
   ) {
     return await this.customerUseCase.createCustomer(dto, agentId);
   }
+
+  @Patch(':id')
+  @Roles('AGENT', 'TEAM_LEADER', 'DIRECTOR', 'ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({ summary: 'Cập nhật thông tin hồ sơ khách hàng 360' })
+  async updateCustomer(
+    @Param('id') id: string,
+    @Body() dto: UpdateCustomerDto,
+    @CurrentUser('role') role: string,
+    @CurrentUser('id') currentUserId: string,
+  ) {
+    // Phân quyền chặt chẽ: Chỉ cấp Quản lý (TEAM_LEADER, DIRECTOR, ADMIN, SUPER_ADMIN) mới có quyền đổi chuyên viên phụ trách
+    if (role === 'AGENT' && dto.assignedToId && dto.assignedToId !== currentUserId) {
+      throw new ForbiddenException('Chuyên viên môi giới (AGENT) không được phép tự ý chuyển giao khách hàng cho chuyên viên khác. Vui lòng liên hệ Trưởng phòng hoặc Quản trị viên!');
+    }
+    return await this.customerUseCase.updateCustomer(id, dto);
+  }
 }
+

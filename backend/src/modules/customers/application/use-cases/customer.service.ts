@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { CustomerUseCase } from '../ports/in/customer.use-case';
-import { CreateCustomerDto, FilterCustomerDto } from '../dtos/customer.dto';
+import { CreateCustomerDto, FilterCustomerDto, UpdateCustomerDto } from '../dtos/customer.dto';
 import { PrismaService } from '../../../../database/prisma.service';
 
 const SEED_CUSTOMERS = [
@@ -184,4 +184,48 @@ export class CustomerService implements CustomerUseCase {
     this.inMemoryCustomers.unshift(newCustomer);
     return newCustomer;
   }
+
+  async updateCustomer(id: string, dto: UpdateCustomerDto) {
+    if (this.prisma.isConnected) {
+      try {
+        const updateData: any = {};
+        if (dto.fullName !== undefined) updateData.fullName = dto.fullName;
+        if (dto.phone !== undefined) updateData.phone = dto.phone;
+        if (dto.email !== undefined) updateData.email = dto.email;
+        if (dto.idCardNumber !== undefined) updateData.idCardNumber = dto.idCardNumber;
+        if (dto.rank !== undefined) updateData.rank = dto.rank as any;
+        if (dto.status !== undefined) updateData.status = dto.status;
+        if (dto.assignedToId !== undefined) updateData.assignedToId = dto.assignedToId;
+
+        const updated = await this.prisma.customer.update({
+          where: { id },
+          data: updateData,
+          include: {
+            assignedTo: { select: { fullName: true, phone: true, email: true } },
+            bookings: { include: { unit: true, project: true } },
+            contracts: { include: { unit: true, project: true } },
+          },
+        });
+
+        const idx = this.inMemoryCustomers.findIndex((c) => c.id === id);
+        if (idx !== -1) {
+          this.inMemoryCustomers[idx] = { ...this.inMemoryCustomers[idx], ...updated };
+        }
+        return updated;
+      } catch (err: any) {
+        // Fallback to in-memory if Prisma error or record not in DB
+      }
+    }
+
+    const idx = this.inMemoryCustomers.findIndex((c) => c.id === id);
+    if (idx === -1) {
+      throw new NotFoundException(`Không tìm thấy hồ sơ khách hàng: ${id}`);
+    }
+    this.inMemoryCustomers[idx] = {
+      ...this.inMemoryCustomers[idx],
+      ...dto,
+    };
+    return this.inMemoryCustomers[idx];
+  }
 }
+

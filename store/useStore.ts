@@ -16,14 +16,14 @@ import {
 import { apiClient } from '@/lib/api-client';
 // Dummy Initial Data
 const INITIAL_CUSTOMERS: Customer[] = [
-  { id: 'c1', code: 'KH-001', name: 'Nguyễn Văn Tuấn', phone: '0901234567', email: 'tuan.nguyen@investor.vn', rank: 'VVIP', revenue: 25000000000, assignedTo: 'Lê Hoàng Anh', status: 'Đã giao dịch', createdAt: '2023-01-15' },
-  { id: 'c2', code: 'KH-002', name: 'Trần Thị Bích Ngọc', phone: '0912345678', email: 'bichngoc.tran@vietcapital.vn', rank: 'VIP', revenue: 15000000000, assignedTo: 'Nguyễn Mai', status: 'Đang tư vấn', createdAt: '2023-05-20' },
-  { id: 'c3', code: 'KH-003', name: 'Lê Hoàng Cường', phone: '0987654321', email: 'cuong.le@techvina.com', rank: 'Tiềm Năng', revenue: 0, assignedTo: 'Trần Khoa', status: 'Đang chăm sóc', createdAt: '2023-11-10' },
-  { id: 'c4', code: 'KH-004', name: 'Phạm Minh Tuấn', phone: '0912987654', email: 'minhtuan.pham@saigonres.com', rank: 'VVIP', revenue: 35000000000, assignedTo: 'Thanh Hà', status: 'Đã giao dịch', createdAt: '2023-08-14' },
-  { id: 'c5', code: 'KH-005', name: 'Hoàng Thị Thảo', phone: '0945678123', email: 'thaonhi.hoang@gmail.com', rank: 'VIP', revenue: 8200000000, assignedTo: 'Tuấn Tú', status: 'Đang tư vấn', createdAt: '2024-01-22' },
-  { id: 'c6', code: 'KH-006', name: 'Đặng Quốc Huy', phone: '0977889900', email: 'huy.dang@greenland.vn', rank: 'Tiềm Năng', revenue: 0, assignedTo: 'Minh Anh', status: 'Đang chăm sóc', createdAt: '2024-03-05' },
-  { id: 'c7', code: 'KH-007', name: 'Vũ Thu Trang', phone: '0966554433', email: 'trang.vu@fashionvn.com', rank: 'VIP', revenue: 12000000000, assignedTo: 'Lê Hoàng Anh', status: 'Đã giao dịch', createdAt: '2024-04-18' },
-  { id: 'c8', code: 'KH-008', name: 'Ngô Đức Thắng', phone: '0933221144', email: 'thang.ngo@logistics24.vn', rank: 'Mới', revenue: 0, assignedTo: 'Thanh Hà', status: 'Đang tư vấn', createdAt: '2024-06-30' }
+  { id: 'c1', code: 'KH-001', name: 'Nguyễn Văn Tuấn', phone: '0901234567', email: 'tuan.nguyen@investor.vn', rank: 'VVIP', revenue: 25000000000, assignedTo: 'Lê Hoàng Anh', status: 'Đã giao dịch', createdAt: '2023-01-15', idCardNumber: '079088192831', address: 'Số 12 Bến Nghé, Quận 1, TP. Hồ Chí Minh' },
+  { id: 'c2', code: 'KH-002', name: 'Trần Thị Bích Ngọc', phone: '0912345678', email: 'bichngoc.tran@vietcapital.vn', rank: 'VIP', revenue: 15000000000, assignedTo: 'Nguyễn Mai', status: 'Đang tư vấn', createdAt: '2023-05-20', idCardNumber: '079195002341', address: 'Phường An Phú, TP. Thủ Đức, TP. Hồ Chí Minh' },
+  { id: 'c3', code: 'KH-003', name: 'Lê Hoàng Cường', phone: '0987654321', email: 'cuong.le@techvina.com', rank: 'Tiềm Năng', revenue: 0, assignedTo: 'Trần Khoa', status: 'Đang chăm sóc', createdAt: '2023-11-10', idCardNumber: '079190003456', address: 'Quận Bình Thạnh, TP. Hồ Chí Minh' },
+  { id: 'c4', code: 'KH-004', name: 'Phạm Minh Tuấn', phone: '0912987654', email: 'minhtuan.pham@saigonres.com', rank: 'VVIP', revenue: 35000000000, assignedTo: 'Thanh Hà', status: 'Đã giao dịch', createdAt: '2023-08-14', idCardNumber: '079185006789', address: 'Quận 3, TP. Hồ Chí Minh' },
+  { id: 'c5', code: 'KH-005', name: 'Hoàng Thị Thảo', phone: '0945678123', email: 'thaonhi.hoang@gmail.com', rank: 'VIP', revenue: 8200000000, assignedTo: 'Tuấn Tú', status: 'Đang tư vấn', createdAt: '2024-01-22', idCardNumber: '079192004567', address: 'Quận Cầu Giấy, Hà Nội' },
+  { id: 'c6', code: 'KH-006', name: 'Đặng Quốc Huy', phone: '0977889900', email: 'huy.dang@greenland.vn', rank: 'Tiềm Năng', revenue: 0, assignedTo: 'Minh Anh', status: 'Đang chăm sóc', createdAt: '2024-03-05', idCardNumber: '079188005678', address: 'Quận 7, TP. Hồ Chí Minh' },
+  { id: 'c7', code: 'KH-007', name: 'Vũ Thu Trang', phone: '0966554433', email: 'trang.vu@fashionvn.com', rank: 'VIP', revenue: 12000000000, assignedTo: 'Lê Hoàng Anh', status: 'Đã giao dịch', createdAt: '2024-04-18', idCardNumber: '079193006789', address: 'Quận Đống Đa, Hà Nội' },
+  { id: 'c8', code: 'KH-008', name: 'Ngô Đức Thắng', phone: '0933221144', email: 'thang.ngo@logistics24.vn', rank: 'Mới', revenue: 0, assignedTo: 'Thanh Hà', status: 'Đang tư vấn', createdAt: '2024-06-30', idCardNumber: '079180007890', address: 'Quận Hải An, Hải Phòng' }
 ];
 
 const INITIAL_PROJECTS: Project[] = [
@@ -216,14 +216,16 @@ const INITIAL_CONTRACTS: Contract[] = [
     id: 'ct1', code: 'HD-921', customerId: 'c1', inventoryId: 'i1', projectId: 'p1', 
     value: 25000000000, date: '2023-12-01', status: 'Đã ký', type: 'Hợp đồng mua bán', 
     paymentProgress: 95, bankSupport: 'Vietcombank', signer: 'Trần Văn Sếp (Tổng Giám Đốc)',
+    signatureHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+    signedAt: '2023-12-05 14:30', legalNotaryStatus: 'Đã hoàn tất',
     loanAmount: 15000000000, loanTermYears: 20, interestSupportMonths: 24, witnessAgent: 'Lê Hoàng Anh',
     notaryOffice: 'Văn phòng Công chứng Sài Gòn', notaryDate: '2023-12-05',
     paymentSchedule: [
-      { installment: 1, milestone: 'Ký Thỏa thuận đặt cọc', percentage: 10, amount: 2500000000, dueDate: '2023-12-01', status: 'Đã thu', paidDate: '2023-12-01', invoiceRef: 'INV-VCB-001' },
-      { installment: 2, milestone: 'Ký HĐMB - Hoàn thành phần móng', percentage: 15, amount: 3750000000, dueDate: '2024-02-15', status: 'Đã thu', paidDate: '2024-02-14', invoiceRef: 'INV-VCB-042' },
-      { installment: 3, milestone: 'Đổ sàn tầng 2 khu biệt thự', percentage: 20, amount: 5000000000, dueDate: '2024-05-20', status: 'Đã thu', paidDate: '2024-05-18', invoiceRef: 'INV-VCB-119' },
-      { installment: 4, milestone: 'Cất nóc & hoàn thiện thô', percentage: 25, amount: 6250000000, dueDate: '2024-09-30', status: 'Đã thu', paidDate: '2024-09-28', invoiceRef: 'INV-VCB-205' },
-      { installment: 5, milestone: 'Bàn giao chìa khóa & nội thất', percentage: 25, amount: 6250000000, dueDate: '2025-01-15', status: 'Đã thu', paidDate: '2025-01-12', invoiceRef: 'INV-VCB-310' },
+      { installment: 1, milestone: 'Ký Thỏa thuận đặt cọc', percentage: 10, amount: 2500000000, dueDate: '2023-12-01', status: 'Đã thu', paidDate: '2023-12-01', invoiceRef: 'INV-VCB-001', paymentMethod: 'Chuyển khoản Vietcombank' },
+      { installment: 2, milestone: 'Ký HĐMB - Hoàn thành phần móng', percentage: 15, amount: 3750000000, dueDate: '2024-02-15', status: 'Đã thu', paidDate: '2024-02-14', invoiceRef: 'INV-VCB-042', paymentMethod: 'Ủy nhiệm chi' },
+      { installment: 3, milestone: 'Đổ sàn tầng 2 khu biệt thự', percentage: 20, amount: 5000000000, dueDate: '2024-05-20', status: 'Đã thu', paidDate: '2024-05-18', invoiceRef: 'INV-VCB-119', paymentMethod: 'Ủy nhiệm chi' },
+      { installment: 4, milestone: 'Cất nóc & hoàn thiện thô', percentage: 25, amount: 6250000000, dueDate: '2024-09-30', status: 'Đã thu', paidDate: '2024-09-28', invoiceRef: 'INV-VCB-205', paymentMethod: 'Ủy nhiệm chi' },
+      { installment: 5, milestone: 'Bàn giao chìa khóa & nội thất', percentage: 25, amount: 6250000000, dueDate: '2025-01-15', status: 'Đã thu', paidDate: '2025-01-12', invoiceRef: 'INV-VCB-310', paymentMethod: 'Ủy nhiệm chi' },
       { installment: 6, milestone: 'Bàn giao Giấy chứng nhận quyền sở hữu (Sổ hồng)', percentage: 5, amount: 1250000000, dueDate: '2025-08-30', status: 'Chưa đến hạn' }
     ],
     attachments: [
@@ -237,11 +239,12 @@ const INITIAL_CONTRACTS: Contract[] = [
     id: 'ct2', code: 'DC-922', customerId: 'c2', inventoryId: 'i10', projectId: 'p4', 
     value: 5500000000, date: '2024-01-15', status: 'Chờ duyệt', type: 'Hợp đồng đặt cọc', 
     paymentProgress: 15, bankSupport: 'Techcombank', signer: 'Nguyễn Văn Quản (Phó Giám Đốc)',
+    signatureHash: undefined, signedAt: undefined, legalNotaryStatus: 'Chờ công chứng',
     loanAmount: 3850000000, loanTermYears: 25, interestSupportMonths: 18, witnessAgent: 'Tuấn Tú',
     notaryOffice: 'Văn phòng Công chứng Thủ Đức',
     paymentSchedule: [
-      { installment: 1, milestone: 'Đặt cọc thiện chí giữ chỗ', percentage: 2, amount: 100000000, dueDate: '2024-01-10', status: 'Đã thu', paidDate: '2024-01-10', invoiceRef: 'INV-TCB-008' },
-      { installment: 2, milestone: 'Ký Hợp đồng đặt cọc (Đủ 15%)', percentage: 13, amount: 725000000, dueDate: '2024-01-20', status: 'Đã thu', paidDate: '2024-01-18', invoiceRef: 'INV-TCB-021' },
+      { installment: 1, milestone: 'Đặt cọc thiện chí giữ chỗ', percentage: 2, amount: 100000000, dueDate: '2024-01-10', status: 'Đã thu', paidDate: '2024-01-10', invoiceRef: 'INV-TCB-008', paymentMethod: 'VietQR IPN' },
+      { installment: 2, milestone: 'Ký Hợp đồng đặt cọc (Đủ 15%)', percentage: 13, amount: 725000000, dueDate: '2024-01-20', status: 'Đã thu', paidDate: '2024-01-18', invoiceRef: 'INV-TCB-021', paymentMethod: 'Ủy nhiệm chi' },
       { installment: 3, milestone: 'Ký HĐMB chính thức', percentage: 15, amount: 825000000, dueDate: '2024-04-15', status: 'Đến hạn' },
       { installment: 4, milestone: 'Ngân hàng Techcombank giải ngân gói vay', percentage: 65, amount: 3575000000, dueDate: '2024-08-30', status: 'Chưa đến hạn' },
       { installment: 5, milestone: 'Nhận bàn giao sổ hồng', percentage: 5, amount: 275000000, dueDate: '2025-06-30', status: 'Chưa đến hạn' }
@@ -3078,7 +3081,10 @@ interface AppState extends AppDatabase {
   // Actions for Contracts
   addContract: (contract: Omit<Contract, 'id' | 'code' | 'date'>) => void;
   updateContractStatus: (id: string, status: Contract['status']) => void;
-  recordContractPayment: (contractId: string, installmentNumber: number, paidAmount?: number, invoiceRef?: string) => void;
+  recordContractPayment: (contractId: string, installmentNumber: number, paidAmount?: number, invoiceRef?: string, paymentMethod?: string, note?: string) => void;
+  signContract: (contractId: string, signerName: string, signatureHash?: string) => void;
+  addContractAttachment: (contractId: string, attachment: Omit<ContractAttachment, 'id'>) => void;
+  addContractInstallment: (contractId: string, installment: Omit<ContractPaymentSchedule, 'installment'>) => void;
   
   // Actions for Surveys
   addReview: (review: Omit<Review, 'id' | 'date' | 'sentiment'> & { sentiment?: Review['sentiment'] }) => void;
@@ -3650,9 +3656,20 @@ export const useStore = create<AppState>()(
         return { customers: [newCustomer, ...state.customers] };
       }),
 
-      updateCustomer: (id, data) => set((state) => ({
-        customers: state.customers.map(c => c.id === id ? { ...c, ...data } : c)
-      })),
+      updateCustomer: (id, data) => {
+        set((state) => ({
+          customers: state.customers.map(c => c.id === id ? { ...c, ...data } : c)
+        }));
+        try {
+          apiClient.customers.update(id, {
+            fullName: data.name,
+            phone: data.phone,
+            email: data.email,
+            rank: data.rank,
+            status: data.status,
+          }).catch(() => {});
+        } catch {}
+      },
 
       updateInventoryStatus: (id, status, customerId) => set((state) => ({
         inventory: state.inventory.map(i => i.id === id ? { ...i, status, customerId } : i)
@@ -3961,11 +3978,63 @@ export const useStore = create<AppState>()(
       },
 
       updateContractStatus: (id, status) => set((state) => ({
-        contracts: state.contracts.map(c => c.id === id ? { ...c, status } : c)
+        contracts: state.contracts.map(c => (c.id === id || c.code === id) ? { ...c, status } : c)
       })),
 
-      recordContractPayment: (contractId, installmentNumber, paidAmount, invoiceRef) => set((state) => {
-        const contract = state.contracts.find(c => c.id === contractId);
+      signContract: (contractId, signerName, signatureHash) => set((state) => {
+        const hash = signatureHash || Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+        const signedAt = new Date().toISOString().replace('T', ' ').substring(0, 16);
+        return {
+          contracts: state.contracts.map(c => (c.id === contractId || c.code === contractId) ? {
+            ...c,
+            status: 'Đã ký' as const,
+            signer: signerName,
+            signatureHash: hash,
+            signedAt,
+            legalNotaryStatus: 'Đã hoàn tất' as const
+          } : c)
+        };
+      }),
+
+      addContractAttachment: (contractId, attachment) => set((state) => {
+        const newAttachment: ContractAttachment = {
+          ...attachment,
+          id: `att-${Date.now()}`
+        };
+        return {
+          contracts: state.contracts.map(c => (c.id === contractId || c.code === contractId) ? {
+            ...c,
+            attachments: [...(c.attachments || []), newAttachment]
+          } : c)
+        };
+      }),
+
+      addContractInstallment: (contractId, installment) => set((state) => {
+        const contract = state.contracts.find(c => c.id === contractId || c.code === contractId);
+        if (!contract) return state;
+        const currentSchedule = contract.paymentSchedule || [];
+        const nextInstallmentNum = currentSchedule.length + 1;
+        const newInstallment: ContractPaymentSchedule = {
+          ...installment,
+          installment: nextInstallmentNum
+        };
+        const updatedSchedule = [...currentSchedule, newInstallment];
+        const totalPaid = updatedSchedule
+          .filter(s => s.status === 'Đã thu')
+          .reduce((sum, s) => sum + s.amount, 0);
+        const newProgress = Math.min(100, Math.round((totalPaid / contract.value) * 100));
+
+        return {
+          contracts: state.contracts.map(c => (c.id === contractId || c.code === contractId) ? {
+            ...c,
+            paymentProgress: newProgress,
+            paymentSchedule: updatedSchedule
+          } : c)
+        };
+      }),
+
+      recordContractPayment: (contractId, installmentNumber, paidAmount, invoiceRef, paymentMethod, note) => set((state) => {
+        const contract = state.contracts.find(c => c.id === contractId || c.code === contractId);
         if (!contract || !contract.paymentSchedule) return state;
 
         const updatedSchedule = contract.paymentSchedule.map(s => {
@@ -3974,7 +4043,9 @@ export const useStore = create<AppState>()(
               ...s,
               status: 'Đã thu' as const,
               paidDate: new Date().toISOString().split('T')[0],
-              invoiceRef: invoiceRef || `INV-AUTO-${Date.now().toString().slice(-4)}`
+              invoiceRef: invoiceRef || `INV-AUTO-${Date.now().toString().slice(-4)}`,
+              paymentMethod: paymentMethod || s.paymentMethod || 'Chuyển khoản VietQR IPN',
+              note: note || s.note
             };
           }
           return s;
@@ -3987,7 +4058,7 @@ export const useStore = create<AppState>()(
         const newPaymentProgress = Math.min(100, Math.round((totalPaid / contract.value) * 100));
 
         return {
-          contracts: state.contracts.map(c => c.id === contractId ? {
+          contracts: state.contracts.map(c => (c.id === contractId || c.code === contractId) ? {
             ...c,
             paymentProgress: newPaymentProgress,
             paymentSchedule: updatedSchedule

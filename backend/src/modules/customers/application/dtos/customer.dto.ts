@@ -44,3 +44,41 @@ export class FilterCustomerDto {
   @IsString()
   status?: string;
 }
+
+export class UpdateCustomerDto {
+  @ApiPropertyOptional({ example: 'Nguyễn Văn Tuấn' })
+  @IsOptional()
+  @IsString()
+  fullName?: string;
+
+  @ApiPropertyOptional({ example: '0901234567' })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiPropertyOptional({ example: 'tuan.nguyen@investor.vn' })
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @ApiPropertyOptional({ example: '079085001234' })
+  @IsOptional()
+  @IsString()
+  idCardNumber?: string;
+
+  @ApiPropertyOptional({ example: 'DIAMOND_VVIP' })
+  @IsOptional()
+  @IsString()
+  rank?: string;
+
+  @ApiPropertyOptional({ example: 'Đã giao dịch' })
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @ApiPropertyOptional({ example: 'usr-admin-001' })
+  @IsOptional()
+  @IsString()
+  assignedToId?: string;
+}
+

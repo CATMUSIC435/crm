@@ -9,6 +9,9 @@ export interface Customer {
   assignedTo: string;
   status: 'Đang tư vấn' | 'Đã giao dịch' | 'Đang chăm sóc';
   createdAt: string;
+  idCardNumber?: string;
+  address?: string;
+  notes?: string;
 }
 
 export interface Project {
@@ -71,6 +74,8 @@ export interface ContractPaymentSchedule {
   status: 'Đã thu' | 'Đến hạn' | 'Chưa đến hạn' | 'Quá hạn';
   paidDate?: string;
   invoiceRef?: string;
+  paymentMethod?: string;
+  note?: string;
 }
 
 export interface ContractAttachment {
@@ -79,7 +84,7 @@ export interface ContractAttachment {
   size: string;
   date: string;
   type: 'pdf' | 'jpg' | 'doc';
-  category: 'Hợp đồng gốc' | 'CCCD' | 'UNC' | 'Biên bản bàn giao';
+  category: 'Hợp đồng gốc' | 'CCCD' | 'UNC' | 'Biên bản bàn giao' | 'Khác' | string;
 }
 
 export interface Contract {
@@ -95,6 +100,9 @@ export interface Contract {
   paymentProgress?: number; // 0 to 100
   bankSupport?: string; // Tên ngân hàng nếu có vay
   signer?: string;
+  signatureHash?: string;
+  signedAt?: string;
+  legalNotaryStatus?: 'Đã hoàn tất' | 'Chờ công chứng' | 'Đang thụ lý';
   loanAmount?: number;
   loanTermYears?: number;
   interestSupportMonths?: number;
